@@ -20,7 +20,7 @@ typedef struct bpt_node {
     int n_elems;
 
     /* Array of keys */
-    bpt_key keys[M-1];
+    bpt_key *keys;
 
     /*
      * Array of children pointers
@@ -29,7 +29,7 @@ typedef struct bpt_node {
      * 'children' point to the children. Otherwise, this
      * is a leaf node and points to the records.
      */
-    void *children[M];
+    void **children;
 
     struct bpt_node *parent;
     struct bpt_node *next;
@@ -47,12 +47,15 @@ typedef struct bpt_tree {
     bpt_node *root;
     bpt_key_compare_cb  key_compare;
     bpt_free_cb free;
+    uint16_t m; /* # of children */
 } bpt_tree;
 
-bpt_tree *bpt_init(bpt_key_compare_cb key_compare,
-		   bpt_free_cb free);
-void bpt_insert(bpt_tree *bpt, void *data);
-void bpt_delete(bpt_tree *bpt, void *key);
+bpt_key *bpt_gen_key(uint16_t key_size, void *key);
+bpt_tree *bpt_init(bpt_key_compare_cb key_compare, bpt_free_cb free,
+		   uint16_t m);
+void bpt_insert(bpt_tree *bpt, bpt_key *key, void *data);
+void bpt_search(bpt_tree *bpt, bpt_key *key);
+void bpt_delete(bpt_tree *bpt, bpt_key *key);
 void bpt_destroy(bpt_tree *bpt);
 
 #endif

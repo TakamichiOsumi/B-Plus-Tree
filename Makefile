@@ -16,7 +16,10 @@ $(OBJ_COMPONENTS):
 $(TEST_APP): $(OBJ_COMPONENTS)
 	$(CC) test_app.c $^ -o $@
 
-.phony: clean
+.phony: clean test
 
 clean:
 	@rm -rf *.o $(TEST_APP) $(TEST_APP).dSYM
+
+test: $(TEST_APP)
+	@./$(TEST_APP) &> /dev/null && echo "Success when the return value is zero >>> $$?"
