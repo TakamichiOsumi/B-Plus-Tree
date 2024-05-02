@@ -11,9 +11,9 @@ typedef struct bpt_key {
     void *key;
 } bpt_key;
 
+/* Representation of root, internal or leaf nodes */
 typedef struct bpt_node {
 
-    /* Internal nodes will show false in below two flags */
     bool is_root;
     bool is_leaf;
 
@@ -57,7 +57,7 @@ typedef struct bpt_tree {
 
     bpt_free_cb free;
 
-    uint16_t m; /* # of children */
+    uint16_t m; /* Equal to # of children */
 } bpt_tree;
 
 bpt_key *bpt_gen_key(uint16_t key_size, void *key);

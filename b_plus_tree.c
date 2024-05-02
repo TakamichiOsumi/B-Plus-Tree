@@ -5,6 +5,18 @@
 
 #include "b_plus_tree.h"
 
+static void*
+bpt_malloc(size_t size){
+    void *p;
+
+    if ((p = malloc(size)) == NULL){
+	perror("malloc");
+	exit(-1);
+    }
+
+    return p;
+}
+
 static bool
 bpt_node_available(bpt_tree *tree, bpt_node *node){
     int max_key_num = tree->m - 1;
@@ -19,11 +31,7 @@ bpt_key*
 bpt_gen_key(uint16_t key_size, void *key){
     bpt_key *new_key;
 
-    if ((new_key = (bpt_key *) malloc(sizeof(bpt_key))) == NULL){
-	perror("malloc");
-	exit(-1);
-    }
-
+    new_key = (bpt_key *) bpt_malloc(sizeof(bpt_key));
     new_key->key_size = key_size;
     new_key->key = key;
 
@@ -34,20 +42,11 @@ static bpt_node *
 bpt_gen_node(uint16_t m){
     bpt_node *node;
 
-    if ((node = (bpt_node *) malloc(sizeof(bpt_node))) == NULL){
-	perror("malloc");
-	exit(-1);
-    }
+    node = (bpt_node *) bpt_malloc(sizeof(bpt_node));
     node->is_root = node->is_leaf = NULL;
     node->n_keys = 0;
-    if ((node->keys = (bpt_key *) malloc(sizeof(bpt_key) * m)) == NULL){
-	perror("malloc");
-	exit(-1);
-    }
-    if ((node->children = (void **) malloc(sizeof(void *))) == NULL){
-	perror("malloc");
-	exit(-1);
-    }
+    node->keys = (bpt_key *) bpt_malloc(sizeof(bpt_key));
+    node->children = (void **) bpt_malloc(sizeof(void *));
     node->parent = node->next = node->last = NULL;
 
     return node;
@@ -59,11 +58,7 @@ bpt_init(bpt_key_compare_cb key_compare, bpt_free_cb free, uint16_t m){
 
     assert(m >= 3);
 
-    if ((tree = (bpt_tree *) malloc(sizeof(bpt_tree))) == NULL){
-	perror("malloc");
-	exit(-1);
-    }
-
+    tree = (bpt_tree *) bpt_malloc(sizeof(bpt_tree));
     tree->root = tree->left_most = bpt_gen_node(m);
     tree->key_compare = key_compare;
     tree->free = free;
@@ -74,16 +69,20 @@ bpt_init(bpt_key_compare_cb key_compare, bpt_free_cb free, uint16_t m){
 
 void
 bpt_insert(bpt_tree *bpt, bpt_key *key, void *data){
+    bpt_node *curr;
+
     assert(bpt != NULL);
     assert(key != NULL);
     assert(data != NULL);
 
-    if (bpt_node_available(bpt, bpt->left_most)){
-	/* find a place to insert by iteraction */
-	;
-    }else{
-	;
-    }
+    curr = bpt->left_most;
+
+    /* find a place to insert by iteraction */
+    do {
+	if (bpt_node_available(bpt, curr)){
+	    printf("found a node to insert new data\n");
+	}
+    } while((curr->last != NULL) && ((curr = curr->next) != NULL));
 }
 
 void
