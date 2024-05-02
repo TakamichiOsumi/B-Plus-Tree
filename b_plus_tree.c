@@ -39,7 +39,7 @@ bpt_gen_node(uint16_t m){
 	exit(-1);
     }
     node->is_root = node->is_leaf = NULL;
-    node->n_elems = 0;
+    node->n_keys = 0;
     if ((node->keys = (bpt_key *) malloc(sizeof(bpt_key) * m)) == NULL){
 	perror("malloc");
 	exit(-1);
