@@ -5,6 +5,16 @@
 
 #include "b_plus_tree.h"
 
+static bool
+bpt_node_available(bpt_tree *tree, bpt_node *node){
+    int max_key_num = tree->m - 1;
+
+    if (node->n_keys < max_key_num)
+	return true;
+    else
+	return false;
+}
+
 bpt_key*
 bpt_gen_key(uint16_t key_size, void *key){
     bpt_key *new_key;
@@ -54,7 +64,7 @@ bpt_init(bpt_key_compare_cb key_compare, bpt_free_cb free, uint16_t m){
 	exit(-1);
     }
 
-    tree->root = NULL;
+    tree->root = tree->left_most = bpt_gen_node(m);
     tree->key_compare = key_compare;
     tree->free = free;
     tree->m = m;
@@ -68,8 +78,11 @@ bpt_insert(bpt_tree *bpt, bpt_key *key, void *data){
     assert(key != NULL);
     assert(data != NULL);
 
-    if (bpt->root == NULL){
-	bpt->root  = bpt_gen_node(bpt->m);
+    if (bpt_node_available(bpt, bpt->left_most)){
+	/* find a place to insert by iteraction */
+	;
+    }else{
+	;
     }
 }
 

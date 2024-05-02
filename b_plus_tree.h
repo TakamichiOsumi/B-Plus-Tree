@@ -17,17 +17,22 @@ typedef struct bpt_node {
     bool is_root;
     bool is_leaf;
 
-    int n_elems;
-
-    /* Array of keys */
+    /*
+     * Array of keys.
+     *
+     * The maximum number of keys is 'm - 1'.
+     */
+    int n_keys;
     bpt_key *keys;
 
     /*
-     * Array of children pointers
+     * Array of children pointers.
+     *
+     * The maximum number of children is 'm'.
      *
      * If this node is an internal node or a root node,
-     * 'children' point to the children. Otherwise, this
-     * is a leaf node and points to the records.
+     * 'children' point to the child nodes. Otherwise,
+     * this points to the records.
      */
     void **children;
 
@@ -45,8 +50,13 @@ typedef void (*bpt_free_cb)(bpt_node *n);
 
 typedef struct bpt_tree {
     bpt_node *root;
+
+    bpt_node *left_most;
+
     bpt_key_compare_cb  key_compare;
+
     bpt_free_cb free;
+
     uint16_t m; /* # of children */
 } bpt_tree;
 
