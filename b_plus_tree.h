@@ -44,7 +44,9 @@ typedef struct bpt_node {
  * Return -1 when k1 < k2, 0 when k1 == k2 and 1 when k1 > k2.
  */
 typedef int (*bpt_key_compare_cb)(bpt_key *k1, bpt_key *k2);
-typedef void (*bpt_free_cb)(bpt_node *n);
+
+/* Free dynamic memory inside of the application data */
+typedef void (*bpt_free_cb)(void *p);
 
 typedef struct bpt_tree {
     bpt_node *root;

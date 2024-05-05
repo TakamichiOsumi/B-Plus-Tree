@@ -27,5 +27,5 @@ clean:
 	@rm -rf *.o $(TEST_APP) $(TEST_APP).dSYM
 	@for dir in $(DEPENDENCY_LIB); do cd $$dir; make clean; cd ..; done
 
-test: $(TEST_APP)
+test: library $(TEST_APP)
 	@./$(TEST_APP) &> /dev/null && echo "Success when the return value is zero >>> $$?"
