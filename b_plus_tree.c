@@ -17,25 +17,6 @@ bpt_malloc(size_t size){
     return p;
 }
 
-/*
- * True if 'new_key' has lower value than any keys existing in the 'curr_node'
- */
-static bool
-bpt_found_insert_pos(bpt_tree *tree, bpt_key *new_key, bpt_node *curr_node){
-    int i;
-    bpt_key *curr_key;
-
-    for (i = 0; i < curr_node->n_keys; i++){
-	curr_key = &curr_node->keys[i];
-	if (tree->key_compare(new_key, curr_key) > 0){
-	    printf("found a existing key smaller than the new inserted key\n");
-	    return true;
-	}
-    }
-
-    return false;
-}
-
 static bool
 bpt_node_available(bpt_tree *tree, bpt_node *node){
     int max_key_num = tree->m - 1;
@@ -64,8 +45,8 @@ bpt_gen_node(uint16_t m){
     node = (bpt_node *) bpt_malloc(sizeof(bpt_node));
     node->is_root = node->is_leaf = NULL;
     node->n_keys = 0;
-    node->keys = (bpt_key *) bpt_malloc(sizeof(bpt_key) * m);
-    node->children = (void **) bpt_malloc(sizeof(void *) * m);
+    node->keys = ll_init(NULL, NULL, NULL);
+    node->children = ll_init(NULL, NULL, NULL);
     node->parent = node->next = node->last = NULL;
 
     return node;
@@ -79,7 +60,7 @@ bpt_init(bpt_key_compare_cb key_compare, bpt_free_cb free, uint16_t m){
 
     tree = (bpt_tree *) bpt_malloc(sizeof(bpt_tree));
 
-    /* set up the initial empty node */
+    /* Set up the initial empty node */
     tree->root = tree->left_most = bpt_gen_node(m);
     tree->root->is_root = tree->root->is_leaf = true;
 
@@ -92,40 +73,6 @@ bpt_init(bpt_key_compare_cb key_compare, bpt_free_cb free, uint16_t m){
 
 void
 bpt_insert(bpt_tree *bpt, bpt_key *key, void *data){
-    bpt_node *prev, *curr;
-    bool has_space, has_smaller_key;
-
-    assert(bpt != NULL);
-    assert(key != NULL);
-    assert(data != NULL);
-
-    prev = curr = bpt->left_most;
-
-
-    do {
-	has_space = has_smaller_key = false;
-
-	/* find a place of insertion */
-	has_space = bpt_node_available(bpt, curr);
-	has_smaller_key = bpt_found_insert_pos(bpt, key, curr);
-
-	if (has_space || has_smaller_key){
-
-	    printf("found a node to insert new data\n");
-	    if (has_space && has_smaller_key){
-		/* insert before the key and keep the ascending order */
-		;
-	    }else if (has_space && !has_smaller_key){
-		/* insert at the end */
-		;
-	    }else if (!has_space && has_smaller_key){
-		;
-	    }
-	}
-
-	prev = curr;
-
-    } while((curr->last != NULL) && ((curr = curr->next) != NULL));
 }
 
 void
