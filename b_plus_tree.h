@@ -38,8 +38,6 @@ typedef struct bpt_node {
 
     struct bpt_node *parent;
     struct bpt_node *next;
-    struct bpt_node *last;
-
 } bpt_node;
 
 /*

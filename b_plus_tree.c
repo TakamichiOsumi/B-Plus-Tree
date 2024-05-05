@@ -47,7 +47,7 @@ bpt_gen_node(uint16_t m){
     node->n_keys = 0;
     node->keys = ll_init(NULL, NULL, NULL);
     node->children = ll_init(NULL, NULL, NULL);
-    node->parent = node->next = node->last = NULL;
+    node->parent = node->next = NULL;
 
     return node;
 }
@@ -72,17 +72,13 @@ bpt_init(bpt_key_compare_cb key_compare, bpt_free_cb free, uint16_t m){
 }
 
 void
-bpt_insert(bpt_tree *bpt, bpt_key *key, void *data){
-}
+bpt_insert(bpt_tree *bpt, bpt_key *key, void *data){}
 
 void
-bpt_search(bpt_tree *bpt, bpt_key *key){
-}
+bpt_search(bpt_tree *bpt, bpt_key *key){}
 
 void
-bpt_delete(bpt_tree *bpt, bpt_key *key){
-}
+bpt_delete(bpt_tree *bpt, bpt_key *key){}
 
 void
-bpt_destroy(bpt_tree *bpt){
-}
+bpt_destroy(bpt_tree *bpt){}
