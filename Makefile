@@ -16,10 +16,10 @@ library:
 	for dir in $(DEPENDENCY_LIB); do make -C $$dir; done
 
 $(OBJ_COMPONENTS):
-	$(CC) b_plus_tree.c -c
+	$(CC) $(CFLAGS) b_plus_tree.c -c
 
 $(TEST_APP): $(OBJ_COMPONENTS)
-	$(CC) -L Linked-List -llinked_list test_app.c $^ -o $@
+	$(CC) $(CFLAGS) -L Linked-List -llinked_list test_app.c $^ -o $@
 
 .phony: clean test
 

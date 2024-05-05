@@ -40,10 +40,14 @@ typedef struct bpt_node {
     struct bpt_node *next;
 } bpt_node;
 
+
+/* Specify how to access the key connected in the 'keys' */
+typedef void *(*bpt_key_access_cb)(void *p);
+
 /*
  * Return -1 when k1 < k2, 0 when k1 == k2 and 1 when k1 > k2.
  */
-typedef int (*bpt_key_compare_cb)(bpt_key *k1, bpt_key *k2);
+typedef int (*bpt_key_compare_cb)(void *k1, void *k2);
 
 /* Free dynamic memory inside of the application data */
 typedef void (*bpt_free_cb)(void *p);
@@ -52,6 +56,8 @@ typedef struct bpt_tree {
     bpt_node *root;
 
     bpt_node *left_most;
+
+    bpt_key_access_cb key_access;
 
     bpt_key_compare_cb  key_compare;
 
@@ -62,7 +68,8 @@ typedef struct bpt_tree {
 } bpt_tree;
 
 bpt_key *bpt_gen_key(uint16_t key_size, void *key);
-bpt_tree *bpt_init(bpt_key_compare_cb key_compare,
+bpt_tree *bpt_init(bpt_key_access_cb key_access,
+		   bpt_key_compare_cb key_compare,
 		   bpt_free_cb free,
 		   uint16_t m);
 void bpt_insert(bpt_tree *bpt, bpt_key *key, void *data);
