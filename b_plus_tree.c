@@ -88,7 +88,8 @@ bpt_search(bpt_node *curr_node, void *new_key){
     while((existing_key = ll_get_iter_node(curr_keys)) != NULL){
 	compared = curr_node->keys->key_compare_cb(curr_node->keys->key_access_cb(existing_key),
 						   curr_node->keys->key_access_cb(new_key));
-	if (compared == 0 /* equal */ || compared == -1 /* existing key > new_key */){
+	if (compared == 0 /* equal */ || compared == 1 /* existing key > new_key */){
+	    printf("found = true\n");
 	    found = true;
 	    break;
 	}

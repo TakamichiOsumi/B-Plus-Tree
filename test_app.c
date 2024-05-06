@@ -26,6 +26,7 @@ employee_key_compare(void *key1, void *key2){
         k2 = (uintptr_t) key2;
 
     printf("%lu vs %lu\n", k1, k2);
+
     if (k1 < k2){
         return -1;
     }else if (k1 == k2){
@@ -75,18 +76,18 @@ search_single_node_test(void){
 		    4);
 
     /* Construct one root without any leaf nodes */
-    ll_asc_insert(tree->root->keys, (void *) 1);
-    ll_asc_insert(tree->root->children, (void *) & e1);
-    ll_asc_insert(tree->root->keys, (void *) 2);
-    ll_asc_insert(tree->root->children, (void *) & e2);
-    ll_asc_insert(tree->root->keys, (void *) 3);
-    ll_asc_insert(tree->root->children, (void *) & e3);
     ll_asc_insert(tree->root->keys, (void *) 4);
-    ll_asc_insert(tree->root->children, (void *) & e4);
+    ll_asc_insert(tree->root->children, (void *) &e4);
+    ll_asc_insert(tree->root->keys, (void *) 1);
+    ll_asc_insert(tree->root->children, (void *) &e1);
+    ll_asc_insert(tree->root->keys, (void *) 2);
+    ll_asc_insert(tree->root->children, (void *) &e2);
+    ll_asc_insert(tree->root->keys, (void *) 3);
+    ll_asc_insert(tree->root->children, (void *) &e3);
 
     ll_begin_iter(tree->root->keys);
     while((p = ll_get_iter_node(tree->root->keys)) != NULL){
-	printf("keys %lu\n", (uintptr_t) p);
+	printf("debug : key=%lu\n", (uintptr_t) p);
     }
     ll_end_iter(tree->root->keys);
 
