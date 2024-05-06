@@ -25,6 +25,7 @@ employee_key_compare(void *key1, void *key2){
     uintptr_t k1 = (uintptr_t) key1,
         k2 = (uintptr_t) key2;
 
+    printf("%lu vs %lu\n", k1, k2);
     if (k1 < k2){
         return -1;
     }else if (k1 == k2){
@@ -88,6 +89,9 @@ search_single_node_test(void){
 	printf("keys %lu\n", (uintptr_t) p);
     }
     ll_end_iter(tree->root->keys);
+
+    assert(bpt_search(tree->root, (void *) 1) == tree->root);
+    assert(bpt_search(tree->root, (void *) 0) == tree->root);
 }
 
 int
