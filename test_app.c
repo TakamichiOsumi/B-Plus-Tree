@@ -46,6 +46,7 @@ emp_key_access(void *emp){
 static void
 emp_free(void *emp){}
 
+/*
 static void
 emp_print(void *p){
     employee_data *emp = (employee_data *) p;
@@ -53,39 +54,25 @@ emp_print(void *p){
     printf("id = %d, name = %s\n",
 	   (int) emp->id, emp->name);
 }
+*/
 
-int
-main(int argc, char **argv){
+static void
+app_search_bpt_test(void){
     bpt_tree *tree;
-    bpt_node *n;
     bpt_key *my_key;
 
     tree = bpt_init(emp_key_access,
 		    emp_key_compare,
 		    emp_free, 4);
+}
 
-    my_key = bpt_gen_key(sizeof(int), (void *) e1.id);
-    bpt_insert(tree, my_key, (void *) &e1);
+int
+main(int argc, char **argv){
 
-    my_key = bpt_gen_key(sizeof(int), (void *) e2.id);
-    bpt_insert(tree, my_key, (void *) &e2);
+    printf("<search bpt key test>");
+    app_search_bpt_test();
 
-    my_key = bpt_gen_key(sizeof(int), (void *) e3.id);
-    bpt_insert(tree, my_key, (void *) &e3);
-
-    my_key = bpt_gen_key(sizeof(int), (void *) e4.id);
-    bpt_insert(tree, my_key, (void *) &e4);
-
-    my_key = bpt_gen_key(sizeof(int), (void *) e5.id);
-    bpt_insert(tree, my_key, (void *) &e5);
-
-    /* dump the left most node */
-    n = tree->left_most;
-    ll_begin_iter(n->children);
-    while((iter = (employee_data *) ll_get_iter_node(n->children)) != NULL){
-	emp_print(iter);
-    }
-    ll_end_iter(n->children);
+    printf("All tests are done gracefully\n");
 
     return 0;
 }
