@@ -5,85 +5,96 @@
 
 #include "b_plus_tree.h"
 
-/* dummy data */
-typedef struct employee_data {
+typedef struct employee {
     uintptr_t id;
     char *name;
-} employee_data;
+} employee;
 
-employee_data *iter,
+/*
+ * linked_list *keys
+ *
+ * Will store uintptr_t *. Return one id.
+ */
+static void *
+employee_key_access(void *data){
+    return data;
+}
+
+static int
+employee_key_compare(void *key1, void *key2){
+    uintptr_t k1 = (uintptr_t) key1,
+        k2 = (uintptr_t) key2;
+
+    if (k1 < k2){
+        return -1;
+    }else if (k1 == k2){
+        return 0;
+    }else{
+        return 1;
+    }
+}
+
+static void
+employee_free(void *data){}
+
+/*
+ * linked_list *children
+ *
+ * Will store employee *. Return one id by casting data
+ * to employee *. The comparison of two ids will be done
+ * with employee_key_compare().
+ */
+static void *
+employee_key_access_from_employee(void *data){
+    employee *e;
+
+    e = (employee *) data;
+
+    return (void *) e->id;
+}
+
+employee *iter,
     e1 = { 1, "foo" },
     e2 = { 2, "bar" },
     e3 = { 3, "bazz" },
     e4 = { 4, "xxxx" },
-    e5 = { 5, "yyyy" },
-    e6 = { 6, "zzzz" },
-    e7 = { 7, "xyz"  },
-    e8 = { 8, "xyzz" };
+    e5 = { 5, "yyyy" };
 
-static int
-emp_key_compare(void *k1, void *k2){
-    if ((uintptr_t) k1 < (uintptr_t) k2){
-	return -1;
-    }else if ((uintptr_t) k1 == (uintptr_t) k2){
-	return 0;
-    }else{
-	return 1;
-    }
-}
-
-static void *
-emp_key_access(void *key){
-    return (void *) key;
-}
-
-/* do nothing. no dynamic memory */
 static void
-emp_free(void *emp){}
-
-/*
-static void
-emp_print(void *p){
-    employee_data *emp = (employee_data *) p;
-
-    printf("id = %d, name = %s\n",
-	   (int) emp->id, emp->name);
-}
-*/
-
-/* Single node test case */
-static void
-app_search_single_node_test(void){
+search_single_node_test(void){
     bpt_tree *tree;
-    bpt_node *root;
+    void *p;
 
-    tree = bpt_init(emp_key_access,
-		    emp_key_compare,
-		    emp_free, 4);
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free,
+		    4);
 
-    root = bpt_gen_node();
-    root->keys = ll_init(tree->key_access,
-			 tree->key_compare,
-			 NULL);
-    root->children = ll_init(tree->key_access,
-			     tree->key_compare,
-			     NULL);
-    ll_asc_insert(root->keys, (void *) e1.id);
-    ll_asc_insert(root->children, (void *) &e1);
-    ll_asc_insert(root->keys, (void *) e2.id);
-    ll_asc_insert(root->children, (void *) &e2);
+    /* Construct one root without any leaf nodes */
+    ll_asc_insert(tree->root->keys, (void *) 1);
+    ll_asc_insert(tree->root->children, (void *) & e1);
+    ll_asc_insert(tree->root->keys, (void *) 2);
+    ll_asc_insert(tree->root->children, (void *) & e2);
+    ll_asc_insert(tree->root->keys, (void *) 3);
+    ll_asc_insert(tree->root->children, (void *) & e3);
+    ll_asc_insert(tree->root->keys, (void *) 4);
+    ll_asc_insert(tree->root->children, (void *) & e4);
 
-    assert(bpt_search(tree->root, (void *) e1.id) != NULL);
-    assert(bpt_search(tree->root, (void *) e2.id) != NULL);
-    /* Doesn't exist, but this means we find a node to insert this id. */
-    assert(bpt_search(tree->root, (void *) e5.id) != NULL);
+    ll_begin_iter(tree->root->keys);
+    while((p = ll_get_iter_node(tree->root->keys)) != NULL){
+	printf("keys %lu\n", (uintptr_t) p);
+    }
+    ll_end_iter(tree->root->keys);
 }
 
 int
 main(int argc, char **argv){
 
     printf("<search bpt key test>\n");
-    app_search_single_node_test();
+    search_single_node_test();
 
     printf("All tests are done gracefully\n");
 

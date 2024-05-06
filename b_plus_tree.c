@@ -18,29 +18,6 @@ bpt_malloc(size_t size){
 }
 
 /*
-static bool
-bpt_node_available(bpt_tree *tree, bpt_node *node){
-    int max_key_num = tree->m - 1;
-
-    if (node->n_keys < max_key_num)
-	return true;
-    else
-	return false;
-}
-*/
-
-bpt_key*
-bpt_gen_key(uint16_t key_size, void *key){
-    bpt_key *new_key;
-
-    new_key = (bpt_key *) bpt_malloc(sizeof(bpt_key));
-    new_key->key_size = key_size;
-    new_key->key = key;
-
-    return new_key;
-}
-
-/*
  * Return empty and nullified node
  *
  * Exported for API tests.
@@ -60,42 +37,43 @@ bpt_gen_node(void){
 }
 
 bpt_tree *
-bpt_init(bpt_key_access_cb key_access,
-	 bpt_key_compare_cb key_compare,
-	 bpt_free_cb free, uint16_t m){
+bpt_init(bpt_key_access_cb keys_key_access,
+	 bpt_key_compare_cb keys_key_compare,
+	 bpt_free_cb keys_key_free,
+	 bpt_key_access_cb children_key_access,
+	 bpt_key_compare_cb children_key_compare,
+	 bpt_free_cb children_key_free,
+	 uint16_t m){
     bpt_tree *tree;
 
-    assert(m >= 3);
+    if(m < 3){
+	printf("b+ tree's 'm' is too small\n");
+	return NULL;
+    }
 
     tree = (bpt_tree *) bpt_malloc(sizeof(bpt_tree));
+    tree->m = m;
 
     /* Set up the initial empty node with empty lists */
     tree->root = bpt_gen_node();
     tree->root->is_root = tree->root->is_leaf = true;
-    tree->root->keys = ll_init(key_access,
-			       key_compare,
-			       NULL);
-    tree->root->children = ll_init(key_access,
-				   key_compare,
-				   NULL);
-
-    /* Set up the callback functions */
-    tree->key_access = key_access;
-    tree->key_compare = key_compare;
-    tree->free = free;
-
-    tree->m = m;
+    tree->root->keys = ll_init(keys_key_access,
+			       keys_key_compare,
+			       keys_key_free);
+    tree->root->children = ll_init(children_key_access,
+				   children_key_compare,
+				   children_key_free);
 
     return tree;
 }
 
 void
-bpt_insert(bpt_tree *bpt, bpt_key *new_key, void *new_data){}
+bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){}
 
 bpt_node *
-bpt_search(bpt_node *curr_node, bpt_key *new_key){
+bpt_search(bpt_node *curr_node, void *new_key){
     linked_list *curr_keys;
-    bpt_key *existing_key;
+    void *existing_key;
     int compared, children_index;
     bool found = false;
 
@@ -105,10 +83,14 @@ bpt_search(bpt_node *curr_node, bpt_key *new_key){
      */
     curr_keys = curr_node->keys;
     children_index = 0;
+
     ll_begin_iter(curr_keys);
-    while((existing_key = (bpt_key *) ll_get_iter_node(curr_keys)) != NULL){
-	compared = curr_node->keys->key_compare_cb(existing_key, new_key);
+    while((existing_key = ll_get_iter_node(curr_keys)) != NULL){
+	compared = curr_node->keys->key_compare_cb(curr_node->keys->key_access_cb(existing_key),
+						   curr_node->keys->key_access_cb(new_key));
+	printf("loop\n");
 	if (compared == 0 || compared == 1){
+	    printf("found = true\n");
 	    found = true;
 	    break;
 	}
@@ -117,7 +99,7 @@ bpt_search(bpt_node *curr_node, bpt_key *new_key){
     ll_end_iter(curr_keys);
 
     if (found){
-	if (curr_node->is_root){
+	if (curr_node->is_root && curr_node->is_leaf){
 	    return curr_node;
 	}else{
 	    /*
@@ -132,6 +114,8 @@ bpt_search(bpt_node *curr_node, bpt_key *new_key){
 	 * Didn't find any value larger than new key value.
 	 * All keys in this node are smaller than the new key.
 	 */
+	printf("did not found larger or equal key value\n");
+
 	if (curr_node->is_root && curr_node->is_leaf){
 	    /*
 	     * Root without any children.
@@ -168,7 +152,7 @@ bpt_search(bpt_node *curr_node, bpt_key *new_key){
 }
 
 void
-bpt_delete(bpt_tree *bpt, bpt_key *key){}
+bpt_delete(bpt_tree *bpt, void *key){}
 
 void
 bpt_destroy(bpt_tree *bpt){}
