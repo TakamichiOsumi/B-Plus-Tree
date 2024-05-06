@@ -25,8 +25,6 @@ employee_key_compare(void *key1, void *key2){
     uintptr_t k1 = (uintptr_t) key1,
         k2 = (uintptr_t) key2;
 
-    printf("%lu vs %lu\n", k1, k2);
-
     if (k1 < k2){
         return -1;
     }else if (k1 == k2){
@@ -82,17 +80,21 @@ search_single_node_test(void){
     ll_asc_insert(tree->root->children, (void *) &e1);
     ll_asc_insert(tree->root->keys, (void *) 2);
     ll_asc_insert(tree->root->children, (void *) &e2);
-    ll_asc_insert(tree->root->keys, (void *) 3);
-    ll_asc_insert(tree->root->children, (void *) &e3);
 
-    ll_begin_iter(tree->root->keys);
-    while((p = ll_get_iter_node(tree->root->keys)) != NULL){
-	printf("debug : key=%lu\n", (uintptr_t) p);
-    }
-    ll_end_iter(tree->root->keys);
-
+    /* Exact key match */
     assert(bpt_search(tree->root, (void *) 1) == tree->root);
+
+    /*
+     * Locate which node to insert a value.
+     *
+     * If the value is smaller than any keys in the node,
+     * then the new key should be inserted into the beginning
+     * of the node. Meanwhile, if we couldn't find any value
+     * larger than the new key, then we should insert the
+     * new key at the end of the node.
+     */
     assert(bpt_search(tree->root, (void *) 0) == tree->root);
+    assert(bpt_search(tree->root, (void *) 5) == tree->root);
 }
 
 int

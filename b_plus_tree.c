@@ -88,11 +88,17 @@ bpt_search(bpt_node *curr_node, void *new_key){
     while((existing_key = ll_get_iter_node(curr_keys)) != NULL){
 	compared = curr_node->keys->key_compare_cb(curr_node->keys->key_access_cb(existing_key),
 						   curr_node->keys->key_access_cb(new_key));
-	if (compared == 0 /* equal */ || compared == 1 /* existing key > new_key */){
-	    printf("found = true\n");
+	/*
+	 * Two keys are equal or existing key is larger than new key
+	 * The former means we found the exact key match. On the other
+	 * hand, the latter means we can insert the 'new_key' before
+	 * the existing key.
+	 */
+	if (compared == 0 || compared == 1){
 	    found = true;
 	    break;
 	}
+
 	children_index++;
     }
     ll_end_iter(curr_keys);
