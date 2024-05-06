@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -22,13 +23,9 @@ employee_data *iter,
 
 static int
 emp_key_compare(void *k1, void *k2){
-    bpt_key *key1, *key2;
-
-    key1 = (bpt_key *) k1;
-    key2 = (bpt_key *) k2;
-    if ((uintptr_t) key1->key < (uintptr_t) key2->key){
+    if ((uintptr_t) k1 < (uintptr_t) k2){
 	return -1;
-    }else if ((uintptr_t) key1->key == (uintptr_t) key2->key){
+    }else if ((uintptr_t) k1 == (uintptr_t) k2){
 	return 0;
     }else{
 	return 1;
@@ -36,13 +33,11 @@ emp_key_compare(void *k1, void *k2){
 }
 
 static void *
-emp_key_access(void *emp){
-    employee_data *e = (employee_data *) emp;
-
-    return (void *) e->id;
+emp_key_access(void *key){
+    return (void *) key;
 }
 
-/* do nothing. */
+/* do nothing. no dynamic memory */
 static void
 emp_free(void *emp){}
 
@@ -56,21 +51,39 @@ emp_print(void *p){
 }
 */
 
+/* Single node test case */
 static void
-app_search_bpt_test(void){
+app_search_single_node_test(void){
     bpt_tree *tree;
-    bpt_key *my_key;
+    bpt_node *root;
 
     tree = bpt_init(emp_key_access,
 		    emp_key_compare,
 		    emp_free, 4);
+
+    root = bpt_gen_node();
+    root->keys = ll_init(tree->key_access,
+			 tree->key_compare,
+			 NULL);
+    root->children = ll_init(tree->key_access,
+			     tree->key_compare,
+			     NULL);
+    ll_asc_insert(root->keys, (void *) e1.id);
+    ll_asc_insert(root->children, (void *) &e1);
+    ll_asc_insert(root->keys, (void *) e2.id);
+    ll_asc_insert(root->children, (void *) &e2);
+
+    assert(bpt_search(tree->root, (void *) e1.id) != NULL);
+    assert(bpt_search(tree->root, (void *) e2.id) != NULL);
+    /* Doesn't exist, but this means we find a node to insert this id. */
+    assert(bpt_search(tree->root, (void *) e5.id) != NULL);
 }
 
 int
 main(int argc, char **argv){
 
-    printf("<search bpt key test>");
-    app_search_bpt_test();
+    printf("<search bpt key test>\n");
+    app_search_single_node_test();
 
     printf("All tests are done gracefully\n");
 

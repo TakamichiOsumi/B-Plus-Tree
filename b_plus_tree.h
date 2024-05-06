@@ -72,6 +72,7 @@ typedef struct bpt_tree {
 } bpt_tree;
 
 bpt_key *bpt_gen_key(uint16_t key_size, void *key);
+bpt_node *bpt_gen_node(void);
 bpt_tree *bpt_init(bpt_key_access_cb key_access,
 		   bpt_key_compare_cb key_compare,
 		   bpt_free_cb free,

@@ -40,8 +40,12 @@ bpt_gen_key(uint16_t key_size, void *key){
     return new_key;
 }
 
-/* Return empty and nullified node */
-static bpt_node *
+/*
+ * Return empty and nullified node
+ *
+ * Exported for API tests.
+ */
+bpt_node *
 bpt_gen_node(void){
     bpt_node *node;
 
@@ -124,36 +128,36 @@ bpt_search(bpt_node *curr_node, bpt_key *new_key){
 			      new_key);
 	}
     }else{
+	/*
+	 * Didn't find any value larger than new key value.
+	 * All keys in this node are smaller than the new key.
+	 */
 	if (curr_node->is_root && curr_node->is_leaf){
 	    /*
-	     * This is a root without any children.
-	     *
-	     * Any smaller key couldn't be found
-	     * and there is no 'next' node.
+	     * Root without any children.
 	     */
 	    assert(curr_node->next == NULL);
 
 	    return curr_node;
 	}else if (curr_node->is_root && !curr_node->is_leaf){
 	    /*
-	     * This is a root that has children. Search for
-	     * larger key value by recursive call from the
-	     * rightmost children node.
+	     * Root with children.
 	     */
-	    int rightmost_index = ll_get_length(curr_node->keys);
-
 	    return bpt_search((bpt_node *)
-			      ll_get_index_node(curr_node->children, rightmost_index),
-			      new_key);
+			      ll_get_index_node(curr_node->children,
+						ll_get_length(curr_node->keys)) /* rightmost child */,
+						new_key);
 	}else if (!curr_node->is_root && curr_node->is_leaf){
-	    /* This is leaf node that has upper node */
-	    return NULL;
+	    /*
+	     * Leaf node that doesn't have any children.
+	     */
+	    return curr_node;
 	}else if (!curr_node->is_root && !curr_node->is_leaf){
-	    /* This is internal node */
-	    int rightmost_index = ll_get_length(curr_node->keys);
-
+	    /*
+	     * Internal node.
+	     */
 	    return bpt_search((bpt_node *)
-			      ll_get_index_node(curr_node->children, rightmost_index),
+			      ll_get_index_node(curr_node->children, ll_get_length(curr_node->keys)),
 			      new_key);
 	}
     }
