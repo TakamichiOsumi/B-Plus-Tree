@@ -63,7 +63,7 @@ employee *iter,
 static void
 search_single_node_test(void){
     bpt_tree *tree;
-    void *p;
+    bpt_node *last_node = NULL;
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -82,19 +82,38 @@ search_single_node_test(void){
     ll_asc_insert(tree->root->children, (void *) &e2);
 
     /* Exact key match */
-    assert(bpt_search(tree->root, (void *) 1) == tree->root);
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+    assert(last_node == tree->root);
 
     /*
-     * Locate which node to insert a value.
+     * Emulate an insertion of a key to one root leaf node.
      *
-     * If the value is smaller than any keys in the node,
-     * then the new key should be inserted into the beginning
+     * When a new key is smaller than any keys in the node,
+     * then the new one should be inserted into the beginning
      * of the node. Meanwhile, if we couldn't find any value
      * larger than the new key, then we should insert the
      * new key at the end of the node.
      */
-    assert(bpt_search(tree->root, (void *) 0) == tree->root);
-    assert(bpt_search(tree->root, (void *) 5) == tree->root);
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 0, &last_node) == false);
+    assert(last_node == tree->root);
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 5, &last_node) == false);
+    assert(last_node == tree->root);
+}
+
+static void
+search_three_nodes_test(void){
+    bpt_tree *tree;
+
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free,
+		    3);
 }
 
 int

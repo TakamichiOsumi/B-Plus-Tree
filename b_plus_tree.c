@@ -70,12 +70,15 @@ bpt_init(bpt_key_access_cb keys_key_access,
 void
 bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){}
 
-bpt_node *
-bpt_search(bpt_node *curr_node, void *new_key){
+bool
+bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
     linked_list *curr_keys;
     void *existing_key;
-    int compared, children_index;
-    bool found = false;
+    int cmp, children_index;
+    bool found_larger_key = false;
+
+    /* Set the return value first. This node can be the last */
+    *last_explored_node = curr_node;
 
     /*
      * Iterate each bpt's key and compare it with the new key.
@@ -86,16 +89,20 @@ bpt_search(bpt_node *curr_node, void *new_key){
 
     ll_begin_iter(curr_keys);
     while((existing_key = ll_get_iter_node(curr_keys)) != NULL){
-	compared = curr_node->keys->key_compare_cb(curr_node->keys->key_access_cb(existing_key),
-						   curr_node->keys->key_access_cb(new_key));
-	/*
-	 * Two keys are equal or existing key is larger than new key
-	 * The former means we found the exact key match. On the other
-	 * hand, the latter means we can insert the 'new_key' before
-	 * the existing key.
-	 */
-	if (compared == 0 || compared == 1){
-	    found = true;
+	cmp = curr_node->keys->key_compare_cb(curr_node->keys->key_access_cb(existing_key),
+					      curr_node->keys->key_access_cb(new_key));
+	if (cmp == 0){
+	    /* Two keys are equal */
+	    ll_end_iter(curr_keys);
+
+	    return true;
+	}else if (cmp == 1){
+	    /*
+	     * The existing key is larger than new key. It means
+	     * we can insert the 'new_key' before the larger existing key.
+	     * Break now.
+	     */
+	    found_larger_key = true;
 	    break;
 	}
 
@@ -103,57 +110,52 @@ bpt_search(bpt_node *curr_node, void *new_key){
     }
     ll_end_iter(curr_keys);
 
-    if (found){
+    if (found_larger_key){
+	printf("found larger key than %p\n", new_key);
+
 	if (curr_node->is_root && curr_node->is_leaf){
-	    return curr_node;
+	    return false;
 	}else{
-	    /*
-	     * Recursive call of child bpt_node.
-	     */
+	    /* Recursive call with the children index */
 	    return bpt_search((bpt_node *)
 			      ll_get_index_node(curr_node->children, children_index),
-			      new_key);
+			      new_key, last_explored_node);
 	}
     }else{
 	/*
 	 * Didn't find any value larger than new key value.
 	 * All keys in this node are smaller than the new key.
+	 *
+	 * Search for the rightmost child if necessary.
 	 */
-	printf("did not found larger or equal key value\n");
+	printf("did not found smaller or equal key value than %p\n", new_key);
 
 	if (curr_node->is_root && curr_node->is_leaf){
-	    /*
-	     * Root without any children.
-	     */
+	    /* Root without any children */
 	    assert(curr_node->next == NULL);
 
-	    return curr_node;
+	    return false;
 	}else if (curr_node->is_root && !curr_node->is_leaf){
-	    /*
-	     * Root with children.
-	     */
+	    /* Root with children. Search for rightmost child */
 	    return bpt_search((bpt_node *)
 			      ll_get_index_node(curr_node->children,
-						ll_get_length(curr_node->keys)) /* rightmost child */,
-						new_key);
+						ll_get_length(curr_node->keys)),
+			      new_key, last_explored_node);
 	}else if (!curr_node->is_root && curr_node->is_leaf){
-	    /*
-	     * Leaf node that doesn't have any children.
-	     */
-	    return curr_node;
+	    /* Leaf node that doesn't have any children */
+	    return false;
 	}else if (!curr_node->is_root && !curr_node->is_leaf){
-	    /*
-	     * Internal node.
-	     */
+	    /* Internal node */
 	    return bpt_search((bpt_node *)
-			      ll_get_index_node(curr_node->children, ll_get_length(curr_node->keys)),
-			      new_key);
+			      ll_get_index_node(curr_node->children,
+						ll_get_length(curr_node->keys)),
+			      new_key, last_explored_node);
 	}
     }
 
     assert(0);
 
-    return NULL;
+    return false;
 }
 
 void
