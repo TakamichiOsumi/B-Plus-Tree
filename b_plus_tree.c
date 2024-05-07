@@ -122,30 +122,19 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
 			      new_key, last_explored_node);
 	}
     }else{
-	/*
-	 * Didn't find any value larger than new key value.
-	 * All keys in this node are smaller than the new key.
-	 *
-	 * Search for the rightmost child if necessary.
-	 */
+	/* All keys in this node are smaller than the new key */
 	printf("did not found smaller or equal key value than %p\n", new_key);
 
-	if (curr_node->is_root && curr_node->is_leaf){
-	    /* Root without any children */
-	    assert(curr_node->next == NULL);
-
+	if ((curr_node->is_root && curr_node->is_leaf) ||
+	    (!curr_node->is_root && curr_node->is_leaf)){
+	    /* No children. Search failure. */
 	    return false;
-	}else if (curr_node->is_root && !curr_node->is_leaf){
-	    /* Root with children. Search for rightmost child */
-	    return bpt_search((bpt_node *)
-			      ll_get_index_node(curr_node->children,
-						ll_get_length(curr_node->keys)),
-			      new_key, last_explored_node);
-	}else if (!curr_node->is_root && curr_node->is_leaf){
-	    /* Leaf node that doesn't have any children */
-	    return false;
-	}else if (!curr_node->is_root && !curr_node->is_leaf){
-	    /* Internal node */
+	}else if ((curr_node->is_root && !curr_node->is_leaf) ||
+		  (!curr_node->is_root && !curr_node->is_leaf)){
+	    /*
+	     * Root with children or internal node.
+	     * Search for rightmost child.
+	     */
 	    return bpt_search((bpt_node *)
 			      ll_get_index_node(curr_node->children,
 						ll_get_length(curr_node->keys)),

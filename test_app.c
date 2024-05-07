@@ -119,8 +119,10 @@ search_three_nodes_test(void){
 int
 main(int argc, char **argv){
 
-    printf("<search bpt key test>\n");
+    printf("<search bpt key test from single node>\n");
     search_single_node_test();
+    printf("<search bpt key test from three nodes>\n");
+    search_three_nodes_test();
 
     printf("All tests are done gracefully\n");
 
