@@ -89,23 +89,38 @@ bpt_init(bpt_key_access_cb keys_key_access,
 
 /*
  * Wrapper function of ll_split() for node split.
+ *
+ * Swap the return value of ll_split() internally.
+ * This is required to connect the split nodes
+ * with other existing nodes before and after the
+ * split nodes.
  */
 static bpt_node *
 bpt_node_split(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_data){
-    bpt_node *left_half;
+    bpt_node *right_half;
+    linked_list *swap_keys, *swap_children;
 
     /* This node's keys are children are null at first */
-    left_half = bpt_gen_node();
+    right_half = bpt_gen_node();
 
     /* Move the internal data of node */
-    left_half->keys = ll_split(curr_node->keys, t->m / 2 + 1);
-    left_half->n_keys = ll_get_length(left_half->keys);
-    left_half->children = ll_split(curr_node->children, t->m / 2 + 1);
+    right_half->keys = ll_split(curr_node->keys, t->m / 2 + 1);
+    right_half->children = ll_split(curr_node->children, t->m / 2 + 1);
 
-    /* Update the states of curr_node as well */
+    swap_keys = right_half->keys;
+    swap_children = right_half->children;
+
+    right_half->keys = curr_node->keys;
+    right_half->children = curr_node->children;
+
+    curr_node->keys = swap_keys;
+    curr_node->children = swap_children;
+
+    /* Update the list states */
+    right_half->n_keys = ll_get_length(right_half->keys);
     curr_node->n_keys = ll_get_length(curr_node->keys);
 
-    return left_half;
+    return right_half;
 }
 
 /*
@@ -118,7 +133,7 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_d
 	curr_node->n_keys++;
 	ll_asc_insert(curr_node->keys, new_key);
     }else{
-	bpt_node *left_half;
+	bpt_node *right_half;
 	void *copied_up_key = NULL;
 
 	printf("*split*\n");
@@ -139,22 +154,21 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_d
 	ll_asc_insert(curr_node->keys, new_key);
 	ll_asc_insert(curr_node->children, new_data);
 
-	left_half = bpt_node_split(t, curr_node, new_key, new_data);
+	right_half = bpt_node_split(t, curr_node, new_key, new_data);
 
-	assert(ll_get_length(left_half->keys) < t->m);
+	assert(ll_get_length(right_half->keys) < t->m);
 	assert(ll_get_length(curr_node->keys) < t->m);
 
-	/* Fetch the key that will go up */
+	/* Refer to the key that will go up */
 	ll_begin_iter(curr_node->keys);
 	assert((copied_up_key = ll_get_iter_node(curr_node->keys)) != NULL);
 	ll_end_iter(curr_node->keys);
 
-	/* Dump the left half */
-	ll_begin_iter(left_half->keys);
-	while((copied_up_key = ll_get_iter_node(left_half->keys)) != NULL){
+	ll_begin_iter(right_half->keys);
+	while((copied_up_key = ll_get_iter_node(right_half->keys)) != NULL){
 	    printf("left half : %p\n", copied_up_key);
 	}
-	ll_end_iter(left_half->keys);
+	ll_end_iter(right_half->keys);
 
 	/* Dump the right half */
 	ll_begin_iter(curr_node->keys);
@@ -162,12 +176,18 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_d
 	    printf("right half : %p\n", copied_up_key);
 	}
 	ll_end_iter(curr_node->keys);
+
+	/* Connect split leaf nodes */
+	if (curr_node->is_leaf == true){
+	    right_half->next = curr_node->next;
+	    curr_node->next = right_half;
+	}
     }
 }
 
 bool
 bpt_insert(bpt_tree *t, void *new_key, void *new_data){
-    bpt_node *new_node, *last_node;
+    bpt_node *new_node, *last_node; /* last searched node */
     bool found_same_key = false;
 
     new_node = bpt_gen_root_callbacks_node(t);

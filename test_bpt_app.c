@@ -307,6 +307,7 @@ search_three_depth_nodes_test(void){
 static void
 insert_and_create_two_depth_tree(void){
     bpt_tree *tree;
+    /* bpt_node *left, *right; */
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -323,6 +324,15 @@ insert_and_create_two_depth_tree(void){
     assert(bpt_insert(tree, (void *) 4, &e4) == true);
     assert(bpt_insert(tree, (void *) 5, &e5) == true);
     assert(bpt_insert(tree, (void *) 6, &e6) == true);
+
+    /* After the node split, two nodes are correctly connected ? */
+    /*
+    left = NULL;
+    (void) bpt_search(tree->root, (void *) 1, &left);
+    right = NULL;
+    (void) bpt_search(tree->root, (void *) 5, &right);
+    assert(left->next == right);
+    */
 }
 
 /*
