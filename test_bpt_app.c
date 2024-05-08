@@ -60,7 +60,10 @@ employee *iter,
     e2 = { 2, "bar" },
     e3 = { 3, "bazz" },
     e4 = { 4, "xxxx" },
-    e5 = { 5, "yyyy" };
+    e5 = { 5, "yyyy" },
+    e6 = { 6, "aaa"  },
+    e7 = { 7, "bbb"  },
+    e8 = { 8, "ccc"  };
 
 static void
 search_single_node_test(void){
@@ -174,7 +177,8 @@ search_three_depth_nodes_test(void){
     /* internal nodes */
     bpt_node *left_internal, *right_internal;
     /* leaf nodes */
-    bpt_node *leftmost, *second_from_left, *middle, *second_from_right, *rightmost;
+    bpt_node *leftmost, *second_from_left, *middle,
+	*second_from_right, *rightmost;
     /* for test */
     bpt_node *last_node;
 
@@ -300,9 +304,34 @@ search_three_depth_nodes_test(void){
     assert(last_node == rightmost);
 }
 
-int
-main(int argc, char **argv){
+static void
+insert_and_create_two_depth_tree(void){
+    bpt_tree *tree;
 
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free,
+		    5);
+
+    assert(bpt_insert(tree, (void *) 1, &e1) == true);
+    assert(bpt_insert(tree, (void *) 2, &e2) == true);
+    assert(bpt_insert(tree, (void *) 3, &e3) == true);
+    assert(bpt_insert(tree, (void *) 3, &e3) == false); /* duplicate key */
+    assert(bpt_insert(tree, (void *) 4, &e4) == true);
+    assert(bpt_insert(tree, (void *) 5, &e5) == true);
+    assert(bpt_insert(tree, (void *) 6, &e6) == true);
+}
+
+/*
+ * Ignore the values of 'M' in each tree.
+ *
+ * That doesn't matter for this set of tests.
+ */
+static void
+test_bpt_search(void){
     printf("<search key test from single node>\n");
     search_single_node_test();
 
@@ -311,6 +340,19 @@ main(int argc, char **argv){
 
     printf("<search key from depth 3 tree>\n");
     search_three_depth_nodes_test();
+}
+
+static void
+test_bpt_insert(void){
+    printf("<insert keys to create depth 2 tree>\n");
+    insert_and_create_two_depth_tree();
+}
+
+int
+main(int argc, char **argv){
+
+    test_bpt_search();
+    test_bpt_insert();
 
     printf("All tests are done gracefully\n");
 

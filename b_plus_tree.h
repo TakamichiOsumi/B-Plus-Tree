@@ -65,6 +65,7 @@ typedef void (*bpt_free_cb)(void *p);
  * Tree.
  */
 typedef struct bpt_tree {
+
     bpt_node *root;
 
     /* Equal to # of the maximum children */
@@ -82,7 +83,7 @@ bpt_tree *bpt_init(bpt_key_access_cb keys_key_access,
 		   bpt_free_cb children_key_free,
 		   uint16_t m);
 
-void bpt_insert(bpt_tree *bpt, void *key, void *data);
+bool bpt_insert(bpt_tree *bpt, void *key, void *data);
 bool bpt_search(bpt_node *curr_node, void *key,
 		bpt_node **last_explored_node);
 void bpt_delete(bpt_tree *bpt, void *key);
