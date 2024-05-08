@@ -107,17 +107,15 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
     while((existing_key = ll_get_iter_node(curr_keys)) != NULL){
 	cmp = curr_keys->key_compare_cb(curr_keys->key_access_cb(existing_key),
 					curr_keys->key_access_cb(new_key));
+	/*
+	 * Two keys are equal or the existing key is larger than new key.
+	 * The latter means we can insert the 'new_key' before the larger
+	 * existing key. Break now.
+	 */
 	if (cmp == 0){
-	    /* Two keys are equal */
 	    ll_end_iter(curr_keys);
-
 	    return true;
 	}else if (cmp == 1){
-	    /*
-	     * The existing key is larger than new key. It means
-	     * we can insert the 'new_key' before the larger existing key.
-	     * Break now.
-	     */
 	    found_larger_key = true;
 	    break;
 	}

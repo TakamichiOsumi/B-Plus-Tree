@@ -168,14 +168,20 @@ search_two_depth_nodes_test(void){
     assert(last_node == right);
 }
 
+static void
+search_three_depth_nodes_test(void){}
+
 int
 main(int argc, char **argv){
 
     printf("<search bpt key test from single node>\n");
     search_single_node_test();
 
-    printf("<search bpt key from two depth tree>\n");
+    printf("<search bpt key from depth 2 tree>\n");
     search_two_depth_nodes_test();
+
+    printf("<search bpt key from depth 3 tree>\n");
+    search_three_depth_nodes_test();
 
     printf("All tests are done gracefully\n");
 
