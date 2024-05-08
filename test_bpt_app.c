@@ -25,7 +25,7 @@ employee_key_compare(void *key1, void *key2){
     uintptr_t k1 = (uintptr_t) key1,
         k2 = (uintptr_t) key2;
 
-    printf("k1 = %lu vs k2 = %lu\n", k1, k2);
+    /* printf("k1 = %lu vs k2 = %lu\n", k1, k2); */
 
     if (k1 < k2){
         return -1;
@@ -169,18 +169,147 @@ search_two_depth_nodes_test(void){
 }
 
 static void
-search_three_depth_nodes_test(void){}
+search_three_depth_nodes_test(void){
+    bpt_tree *tree;
+    /* internal nodes */
+    bpt_node *left_internal, *right_internal;
+    /* leaf nodes */
+    bpt_node *leftmost, *second_from_left, *middle, *second_from_right, *rightmost;
+    /* for test */
+    bpt_node *last_node;
+
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free,
+		    5);
+
+    /* Root node */
+    ll_asc_insert(tree->root->keys, (void *) 13);
+    tree->root->is_leaf = false;
+
+    /* Left internal node */
+    left_internal = bpt_gen_root_callbacks_node(tree);
+    ll_tail_insert(left_internal->keys, (void *) 9);
+    ll_tail_insert(left_internal->keys, (void *) 11);
+    left_internal->is_root = false;
+    left_internal->is_leaf = false;
+    left_internal->parent = tree->root;
+
+    /* Right internal node */
+    right_internal = bpt_gen_root_callbacks_node(tree);
+    ll_asc_insert(right_internal->keys, (void *) 16);
+    right_internal->is_root = false;
+    right_internal->is_leaf = false;
+    right_internal->parent = tree->root;
+
+    /* Leftmost leaf node */
+    leftmost = bpt_gen_root_callbacks_node(tree);
+    ll_asc_insert(leftmost->keys, (void *) 1);
+    ll_asc_insert(leftmost->keys, (void *) 4);
+    leftmost->is_root = false;
+    leftmost->is_leaf = true;
+    leftmost->parent = left_internal;
+
+    /* Second node from the left */
+    second_from_left = bpt_gen_root_callbacks_node(tree);
+    ll_asc_insert(second_from_left->keys, (void *) 9);
+    ll_asc_insert(second_from_left->keys, (void *) 10);
+    second_from_left->is_root = false;
+    second_from_left->is_leaf = true;
+    second_from_left->parent = left_internal;
+
+    /* Middle leaf node */
+    middle = bpt_gen_root_callbacks_node(tree);
+    ll_asc_insert(middle->keys, (void *) 11);
+    ll_asc_insert(middle->keys, (void *) 12);
+    middle->is_root = false;
+    middle->is_leaf = true;
+    middle->parent = left_internal;
+
+    /* Second node from the right */
+    second_from_right = bpt_gen_root_callbacks_node(tree);
+    ll_asc_insert(second_from_right->keys, (void *) 13);
+    ll_asc_insert(second_from_right->keys, (void *) 15);
+    second_from_right->is_root = false;
+    second_from_right->is_leaf = true;
+    second_from_right->parent = right_internal;
+
+    /* Rightmost leaf node */
+    rightmost = bpt_gen_root_callbacks_node(tree);
+    ll_asc_insert(rightmost->keys, (void *) 16);
+    ll_asc_insert(rightmost->keys, (void *) 20);
+    ll_asc_insert(rightmost->keys, (void *) 25);
+    rightmost->is_root = false;
+    rightmost->is_leaf = true;
+    rightmost->parent = right_internal;
+
+    /* Connect all leaves */
+    leftmost->next = second_from_left;
+    second_from_left->next = middle;
+    middle->next = second_from_right;
+    second_from_right->next = rightmost;
+
+    /* Let upper nodes have children */
+    ll_tail_insert(tree->root->children, (void *) left_internal);
+    ll_tail_insert(tree->root->children, (void *) right_internal);
+
+    ll_tail_insert(left_internal->children, (void *) leftmost);
+    ll_tail_insert(left_internal->children, (void *) second_from_left);
+    ll_tail_insert(left_internal->children, (void *) middle);
+
+    ll_tail_insert(right_internal->children, (void *) second_from_right);
+    ll_tail_insert(right_internal->children, (void *) rightmost);
+
+    /* The tree construction is done. Do the tests */
+
+    /* Search for existing keys */
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 13, &last_node) == true);
+    assert(last_node == second_from_right);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 16, &last_node) == true);
+    assert(last_node == rightmost);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 25, &last_node) == true);
+    assert(last_node == rightmost);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 11, &last_node) == true);
+    assert(last_node == middle);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 4, &last_node) == true);
+    assert(last_node == leftmost);
+
+    /* Search for non-existing keys */
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 2, &last_node) == false);
+    assert(last_node == leftmost);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 14, &last_node) == false);
+    assert(last_node == second_from_right);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 30, &last_node) == false);
+    assert(last_node == rightmost);
+}
 
 int
 main(int argc, char **argv){
 
-    printf("<search bpt key test from single node>\n");
+    printf("<search key test from single node>\n");
     search_single_node_test();
 
-    printf("<search bpt key from depth 2 tree>\n");
+    printf("<search key from depth 2 tree>\n");
     search_two_depth_nodes_test();
 
-    printf("<search bpt key from depth 3 tree>\n");
+    printf("<search key from depth 3 tree>\n");
     search_three_depth_nodes_test();
 
     printf("All tests are done gracefully\n");
