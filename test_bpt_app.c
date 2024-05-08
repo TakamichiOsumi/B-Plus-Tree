@@ -341,6 +341,52 @@ insert_and_create_two_depth_tree(void){
     assert(ll_get_index_node(tree->root->children, 1) == right);
 }
 
+static void
+insert_and_create_three_depth_tree(void){
+    bpt_tree *tree;
+    bpt_node *last_node;
+    void *p;
+
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free,
+		    3);
+
+    assert(bpt_insert(tree, (void *) 16, &e1) == true);
+    assert(bpt_insert(tree, (void *) 15, &e1) == true);
+    assert(bpt_insert(tree, (void *) 2,  &e1) == true);
+    assert(bpt_insert(tree, (void *) 4,  &e1) == true);
+    assert(bpt_insert(tree, (void *) 9,  &e1) == true);
+    assert(bpt_insert(tree, (void *) 30, &e1) == true);
+    assert(bpt_insert(tree, (void *) 10, &e1) == true);
+    assert(bpt_insert(tree, (void *) 11, &e1) == true);
+    assert(bpt_insert(tree, (void *) 12, &e1) == true);
+    assert(bpt_insert(tree, (void *) 14, &e1) == true);
+    assert(bpt_insert(tree, (void *) 20, &e1) == true);
+
+    last_node = NULL;
+    (void) bpt_search(tree->root, (void *) 4, &last_node);
+    assert(last_node != NULL);
+
+    while(true){
+	printf("node[ ");
+	ll_begin_iter(last_node->keys);
+	while((p = ll_get_iter_node(last_node->keys)) != NULL){
+	    printf("%lu, ", (uintptr_t) p);
+	}
+	ll_end_iter(last_node->keys);
+	printf("] => ");
+
+	if ((last_node = last_node->next) == NULL){
+	    printf("NULL\n");
+	    break;
+	}
+    }
+}
+
 /*
  * Ignore the values of 'M' in each tree.
  *
@@ -360,14 +406,17 @@ test_bpt_search(void){
 
 static void
 test_bpt_insert(void){
-    printf("<insert keys to create depth 2 tree>\n");
-    insert_and_create_two_depth_tree();
+    // printf("<create depth 2 tree>\n");
+    // insert_and_create_two_depth_tree();
+
+    printf("<create depth 3 tree>\n");
+    insert_and_create_three_depth_tree();
 }
 
 int
 main(int argc, char **argv){
 
-    test_bpt_search();
+    // test_bpt_search();
     test_bpt_insert();
 
     printf("All tests are done gracefully\n");

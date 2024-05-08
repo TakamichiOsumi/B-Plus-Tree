@@ -23,7 +23,7 @@ bpt_dump_list(linked_list *list){
 
     ll_begin_iter(list);
     while((p = ll_get_iter_node(list)) != NULL){
-	printf("dump : %p\n", p);
+	printf("\t dump : %lu\n", (uintptr_t) p);
     }
     ll_end_iter(list);
 }
@@ -131,9 +131,10 @@ bpt_node_split(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_data){
     right_half->n_keys = ll_get_length(right_half->keys);
     curr_node->n_keys = ll_get_length(curr_node->keys);
 
-    /* Copy other attributes */
+    /* Copy other attributes to share */
     right_half->is_root = curr_node->is_root;
     right_half->is_leaf = curr_node->is_leaf;
+    right_half->parent = curr_node->parent;
 
     return right_half;
 }
@@ -146,6 +147,7 @@ void
 bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_data){
     if (ll_get_length(curr_node->keys) < t->m){
 	curr_node->n_keys++;
+	printf("simple insert = %lu\n", (uintptr_t) new_key);
 	ll_asc_insert(curr_node->keys, new_key);
     }else{
 	bpt_node *right_half;
@@ -154,39 +156,52 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_d
 	printf("*split*\n");
 
 	/*
-	 * XXX:
-	 *
-	 * The new pair should be inserted at aligned position,
+	 * Note: The new pair should be inserted at aligned position,
 	 * because the new_data contains its key within the data,
 	 * and both application's callbacks for children key access
 	 * and key compare are registered.
 	 *
-	 * This works because of duplicate key rejection.
-	 * If same value is allowed, the insert position of new child
-	 * won't be clear to ll_asc_insert for children. In this case,
+	 * This works because of duplicate key rejection. If same
+	 * value is allowed, the insert position of new child won't
+	 * be clear to ll_asc_insert for children. In this case,
 	 * further control of index of insertion would be necessary.
 	 */
 	ll_asc_insert(curr_node->keys, new_key);
-	ll_asc_insert(curr_node->children, new_data);
+	if (new_data != NULL){
+	    assert(curr_node->is_leaf == true);
+	    ll_asc_insert(curr_node->children, new_data);
+	}
 
 	right_half = bpt_node_split(t, curr_node, new_key, new_data);
 
 	assert(ll_get_length(right_half->keys) < t->m);
 	assert(ll_get_length(curr_node->keys) < t->m);
 
-	/* Refer to the key that will go up */
+	/* Refer to the key that will go up or will be deleted */
 	ll_begin_iter(right_half->keys);
 	assert((copied_up_key = ll_get_iter_node(right_half->keys)) != NULL);
 	ll_end_iter(right_half->keys);
 
 	/* Debug */
-	bpt_dump_list(right_half->keys);
+	printf("left => \n");
 	bpt_dump_list(curr_node->keys);
+	printf("right => \n");
+	bpt_dump_list(right_half->keys);
 
 	/* Connect split leaf nodes */
 	if (curr_node->is_leaf == true){
 	    right_half->next = curr_node->next;
 	    curr_node->next = right_half;
+	}
+
+	/*
+	 * Delete the copied up key if this node is
+	 * not leaf nodes.
+	 */
+	if (!right_half->is_leaf){
+	    printf("deleted an internal node value = %lu\n",
+		   (uintptr_t) copied_up_key);
+	    ll_remove_by_key(right_half->keys, copied_up_key);
 	}
 
 	if (!curr_node->parent){
@@ -197,19 +212,22 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_d
 	    assert(right_half->parent == NULL);
 
 	    new_top = bpt_gen_root_callbacks_node(t);
-	    curr_node->parent = new_top;
-	    right_half->parent = new_top;
+	    new_top->is_root = true;
+	    new_top->is_leaf = false;
+	    curr_node->parent = right_half->parent = t->root = new_top;
 
 	    ll_asc_insert(new_top->keys, copied_up_key);
 	    ll_asc_insert(new_top->children, curr_node);
 	    ll_asc_insert(new_top->children, right_half);
 
-	    new_top->is_root = true;
-	    new_top->is_leaf = false;
-	    t->root = new_top;
-	    curr_node->is_root = false;
-	    right_half->is_root = false;
+	    curr_node->is_root = right_half->is_root = false;
 	}else{
+	    /* Make the access to new node from the parent node possible */
+	    ll_asc_insert(curr_node->parent->children, right_half);
+
+	    printf("Recursive call of bpt_insert with key = %lu\n",
+		   (uintptr_t) copied_up_key);
+
 	    bpt_insert_internal(t, curr_node->parent,
 				copied_up_key, NULL /* No need to add any data */);
 	}
