@@ -105,8 +105,8 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
 
     ll_begin_iter(curr_keys);
     while((existing_key = ll_get_iter_node(curr_keys)) != NULL){
-	cmp = curr_node->keys->key_compare_cb(curr_node->keys->key_access_cb(existing_key),
-					      curr_node->keys->key_access_cb(new_key));
+	cmp = curr_keys->key_compare_cb(curr_keys->key_access_cb(existing_key),
+					curr_keys->key_access_cb(new_key));
 	if (cmp == 0){
 	    /* Two keys are equal */
 	    ll_end_iter(curr_keys);
