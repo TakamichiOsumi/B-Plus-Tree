@@ -17,6 +17,17 @@ bpt_malloc(size_t size){
     return p;
 }
 
+static void
+bpt_dump_list(linked_list *list){
+    void *p;
+
+    ll_begin_iter(list);
+    while((p = ll_get_iter_node(list)) != NULL){
+	printf("dump : %p\n", p);
+    }
+    ll_end_iter(list);
+}
+
 /*
  * Return empty and nullified node
  *
@@ -120,6 +131,10 @@ bpt_node_split(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_data){
     right_half->n_keys = ll_get_length(right_half->keys);
     curr_node->n_keys = ll_get_length(curr_node->keys);
 
+    /* Copy other attributes */
+    right_half->is_root = curr_node->is_root;
+    right_half->is_leaf = curr_node->is_leaf;
+
     return right_half;
 }
 
@@ -160,27 +175,43 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key, void *new_d
 	assert(ll_get_length(curr_node->keys) < t->m);
 
 	/* Refer to the key that will go up */
-	ll_begin_iter(curr_node->keys);
-	assert((copied_up_key = ll_get_iter_node(curr_node->keys)) != NULL);
-	ll_end_iter(curr_node->keys);
-
 	ll_begin_iter(right_half->keys);
-	while((copied_up_key = ll_get_iter_node(right_half->keys)) != NULL){
-	    printf("left half : %p\n", copied_up_key);
-	}
+	assert((copied_up_key = ll_get_iter_node(right_half->keys)) != NULL);
 	ll_end_iter(right_half->keys);
 
-	/* Dump the right half */
-	ll_begin_iter(curr_node->keys);
-	while((copied_up_key = ll_get_iter_node(curr_node->keys)) != NULL){
-	    printf("right half : %p\n", copied_up_key);
-	}
-	ll_end_iter(curr_node->keys);
+	/* Debug */
+	bpt_dump_list(right_half->keys);
+	bpt_dump_list(curr_node->keys);
 
 	/* Connect split leaf nodes */
 	if (curr_node->is_leaf == true){
 	    right_half->next = curr_node->next;
 	    curr_node->next = right_half;
+	}
+
+	if (!curr_node->parent){
+	    bpt_node *new_top;
+
+	    assert(curr_node->is_root == true);
+	    assert(right_half->is_root == true);
+	    assert(right_half->parent == NULL);
+
+	    new_top = bpt_gen_root_callbacks_node(t);
+	    curr_node->parent = new_top;
+	    right_half->parent = new_top;
+
+	    ll_asc_insert(new_top->keys, copied_up_key);
+	    ll_asc_insert(new_top->children, curr_node);
+	    ll_asc_insert(new_top->children, right_half);
+
+	    new_top->is_root = true;
+	    new_top->is_leaf = false;
+	    t->root = new_top;
+	    curr_node->is_root = false;
+	    right_half->is_root = false;
+	}else{
+	    bpt_insert_internal(t, curr_node->parent,
+				copied_up_key, NULL /* No need to add any data */);
 	}
     }
 }

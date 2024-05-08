@@ -45,12 +45,11 @@ typedef struct bpt_node {
     struct bpt_node *parent;
     struct bpt_node *next;
 
-    /* Enable each node to access their callbacks */
-    struct bpt_tree *tree;
-
 } bpt_node;
 
-/* Specify how to access the key connected in the 'keys' */
+/*
+ * Specify how to access the key connected in the 'keys'.
+ */
 typedef void *(*bpt_key_access_cb)(void *p);
 
 /*
@@ -58,7 +57,9 @@ typedef void *(*bpt_key_access_cb)(void *p);
  */
 typedef int (*bpt_key_compare_cb)(void *k1, void *k2);
 
-/* Free dynamic memory inside of the application data */
+/*
+ * Free dynamic memory inside of the application data.
+ */
 typedef void (*bpt_free_cb)(void *p);
 
 /*

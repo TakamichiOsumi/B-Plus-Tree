@@ -307,7 +307,7 @@ search_three_depth_nodes_test(void){
 static void
 insert_and_create_two_depth_tree(void){
     bpt_tree *tree;
-    /* bpt_node *left, *right; */
+    bpt_node *left, *right;
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -325,14 +325,20 @@ insert_and_create_two_depth_tree(void){
     assert(bpt_insert(tree, (void *) 5, &e5) == true);
     assert(bpt_insert(tree, (void *) 6, &e6) == true);
 
-    /* After the node split, two nodes are correctly connected ? */
-    /*
+    /* After the node split, are all nodes correctly connected ? */
     left = NULL;
-    (void) bpt_search(tree->root, (void *) 1, &left);
+    assert(bpt_search(tree->root, (void *) 1, &left) == true);
     right = NULL;
-    (void) bpt_search(tree->root, (void *) 5, &right);
+    assert(bpt_search(tree->root, (void *) 5, &right) == true);
     assert(left->next == right);
-    */
+    assert(left->parent == tree->root);
+    assert(ll_get_length(tree->root->keys) == 1); /* 4 */
+    assert(ll_get_length(left->keys) == 3); /* 1, 2, 3 */
+    assert(ll_get_length(right->keys) == 3); /* 4, 5, 6 */
+
+    /* Check parent/children relationship too */
+    assert(ll_get_index_node(tree->root->children, 0) == left);
+    assert(ll_get_index_node(tree->root->children, 1) == right);
 }
 
 /*
