@@ -89,7 +89,6 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
     linked_list *curr_keys;
     void *existing_key;
     int cmp, children_index;
-    bool found_larger_key = false;
 
     printf("debug : search node : %p\n", curr_node);
 
@@ -112,11 +111,7 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
 	 * The latter means we can insert the 'new_key' before the larger
 	 * existing key. Break now.
 	 */
-	if (cmp == 0){
-	    ll_end_iter(curr_keys);
-	    return true;
-	}else if (cmp == 1){
-	    found_larger_key = true;
+	if (cmp == 0 || cmp == 1){
 	    break;
 	}
 
@@ -124,13 +119,18 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
     }
     ll_end_iter(curr_keys);
 
-    if (found_larger_key){
-	printf("found larger key than %p\n", new_key);
-
-	/*
-	 * If no children, search failure.
-	 * Otherwise, recursive call with the children index.
-	 */
+    if (cmp == 0){
+	/* Exact key match at the leaf node level */
+	if (curr_node->is_leaf){
+	    return true;
+	}else{
+	    /* Search for the leaf node */
+	    return bpt_search((bpt_node *)
+			      ll_get_index_node(curr_node->children, children_index + 1),
+			      new_key, last_explored_node);
+	}
+    }else if (cmp == 1){
+	/* Found larger key value than the new_key */
 	if (curr_node->is_leaf)
 	    return false;
 	else{
@@ -138,27 +138,22 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
 			      ll_get_index_node(curr_node->children, children_index),
 			      new_key, last_explored_node);
 	}
-
-    }else{
-	/* All keys in this node are smaller than the new key */
-	printf("did not found smaller or equal key value than %p\n", new_key);
-
-	/* If this node has no children, then search failure.
-	 * Otherwise, run a recursive call for the rightmost node.
-	 */
-	if (curr_node->is_leaf){
-	    return false;
-	}else{
-	    return bpt_search((bpt_node *)
-			      ll_get_index_node(curr_node->children,
-						ll_get_length(curr_node->children) - 1),
-			      new_key, last_explored_node);
-	}
     }
 
-    assert(0);
+    /* All keys in this node are smaller than the new key */
+    printf("did not found smaller or equal key value than %p\n", new_key);
 
-    return false;
+    /* If this node has no children, then search failure.
+     * Otherwise, run a recursive call for the rightmost node.
+     */
+    if (curr_node->is_leaf){
+	return false;
+    }else{
+	return bpt_search((bpt_node *)
+			  ll_get_index_node(curr_node->children,
+					    ll_get_length(curr_node->children) - 1),
+			  new_key, last_explored_node);
+    }
 }
 
 void

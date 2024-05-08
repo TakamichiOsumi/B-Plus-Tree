@@ -25,7 +25,7 @@ employee_key_compare(void *key1, void *key2){
     uintptr_t k1 = (uintptr_t) key1,
         k2 = (uintptr_t) key2;
 
-    /* printf("k1 = %lu vs k2 = %lu\n", k1, k2); */
+    printf("k1 = %lu vs k2 = %lu\n", k1, k2);
 
     if (k1 < k2){
         return -1;
@@ -88,15 +88,15 @@ search_single_node_test(void){
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
     assert(last_node == tree->root);
 
-    /*
-     * Emulate an insertion of a key to one root leaf node.
-     *
-     * When a new key is smaller than any keys in the node,
-     * then the new one should be inserted into the beginning
-     * of the node. Meanwhile, if we couldn't find any value
-     * larger than the new key, then we should insert the
-     * new key at the end of the node.
-     */
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 2, &last_node) == true);
+    assert(last_node == tree->root);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 4, &last_node) == true);
+    assert(last_node == tree->root);
+
+    /* Non-existing keys */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 0, &last_node) == false);
     assert(last_node == tree->root);
@@ -145,14 +145,14 @@ search_two_depth_nodes_test(void){
     /* Connect leaves */
     left->next = right;
 
-    /* Now, do the search existing keys */
+    /* Now, do the search of existing keys */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
     assert(last_node == left);
 
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 4, &last_node) == true);
-    assert(last_node == tree->root);
+    assert(last_node == right);
 
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 5, &last_node) == true);
