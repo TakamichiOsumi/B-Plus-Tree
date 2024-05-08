@@ -19,7 +19,7 @@ $(OBJ_COMPONENTS):
 	$(CC) $(CFLAGS) b_plus_tree.c -c
 
 $(TEST_APP): $(OBJ_COMPONENTS)
-	$(CC) $(CFLAGS) -L Linked-List -llinked_list test_app.c $^ -o $@
+	$(CC) $(CFLAGS) -L Linked-List -llinked_list test_bpt_app.c $^ -o $@
 
 .phony: clean test
 

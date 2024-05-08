@@ -27,13 +27,27 @@ bpt_gen_node(void){
     bpt_node *node;
 
     node = (bpt_node *) bpt_malloc(sizeof(bpt_node));
-    node->is_root = node->is_leaf = NULL;
+    node->is_root = node->is_leaf = false;
     node->n_keys = 0;
-    node->keys = NULL;
-    node->children = NULL;
+    node->keys = node->children = NULL;
     node->parent = node->next = NULL;
 
     return node;
+}
+
+bpt_node *
+bpt_gen_root_callbacks_node(bpt_tree *t){
+    bpt_node *n;
+
+    n = bpt_gen_node();
+    n->keys = ll_init(t->root->keys->key_access_cb,
+		      t->root->keys->key_compare_cb,
+		      t->root->keys->free_cb);
+    n->children = ll_init(t->root->children->key_access_cb,
+			  t->root->children->key_compare_cb,
+			  t->root->children->free_cb);
+
+    return n;
 }
 
 bpt_tree *
@@ -77,6 +91,8 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
     int cmp, children_index;
     bool found_larger_key = false;
 
+    printf("debug : search node : %p\n", curr_node);
+
     /* Set the return value first. This node can be the last */
     *last_explored_node = curr_node;
 
@@ -113,31 +129,31 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
     if (found_larger_key){
 	printf("found larger key than %p\n", new_key);
 
-	if (curr_node->is_root && curr_node->is_leaf){
+	/*
+	 * If no children, search failure.
+	 * Otherwise, recursive call with the children index.
+	 */
+	if (curr_node->is_leaf)
 	    return false;
-	}else{
-	    /* Recursive call with the children index */
+	else{
 	    return bpt_search((bpt_node *)
 			      ll_get_index_node(curr_node->children, children_index),
 			      new_key, last_explored_node);
 	}
+
     }else{
 	/* All keys in this node are smaller than the new key */
 	printf("did not found smaller or equal key value than %p\n", new_key);
 
-	if ((curr_node->is_root && curr_node->is_leaf) ||
-	    (!curr_node->is_root && curr_node->is_leaf)){
-	    /* No children. Search failure. */
+	/* If this node has no children, then search failure.
+	 * Otherwise, run a recursive call for the rightmost node.
+	 */
+	if (curr_node->is_leaf){
 	    return false;
-	}else if ((curr_node->is_root && !curr_node->is_leaf) ||
-		  (!curr_node->is_root && !curr_node->is_leaf)){
-	    /*
-	     * Root with children or internal node.
-	     * Search for rightmost child.
-	     */
+	}else{
 	    return bpt_search((bpt_node *)
 			      ll_get_index_node(curr_node->children,
-						ll_get_length(curr_node->keys)),
+						ll_get_length(curr_node->children) - 1),
 			      new_key, last_explored_node);
 	}
     }
