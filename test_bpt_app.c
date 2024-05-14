@@ -25,7 +25,7 @@ employee_key_compare(void *key1, void *key2){
     uintptr_t k1 = (uintptr_t) key1,
         k2 = (uintptr_t) key2;
 
-    printf("%lu vs. %lu\n", k1, k2);
+    /* printf("%lu vs. %lu\n", k1, k2); */
 
     if (k1 < k2){
         return -1;
@@ -342,16 +342,17 @@ insert_and_create_three_depth_tree(void){
     bpt_tree *tree;
     bpt_node *last_node;
     void *p;
+    int ans_index = 0, sorted_output[] =
+	{ 2, 4, 9, 10, 11, 12, 14, 15, 18, 20, 30};
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
 		    employee_free,
 		    employee_key_access_from_employee,
 		    employee_key_compare,
-		    employee_free,
-		    3);
+		    employee_free, 3);
 
-    assert(bpt_insert(tree, (void *) 16, &e1) == true);
+    assert(bpt_insert(tree, (void *) 18, &e1) == true);
     assert(bpt_insert(tree, (void *) 15, &e1) == true);
     assert(bpt_insert(tree, (void *) 2,  &e1) == true);
     assert(bpt_insert(tree, (void *) 4,  &e1) == true);
@@ -368,20 +369,17 @@ insert_and_create_three_depth_tree(void){
     assert(bpt_search(tree->root, (void *) 4, &last_node) == true);
     assert(last_node != NULL);
 
-    printf("-----\n");
     while(true){
-	printf("node[ ");
 	ll_begin_iter(last_node->keys);
 	while((p = ll_get_iter_node(last_node->keys)) != NULL){
-	    printf("%lu, ", (uintptr_t) p);
+	    if ((uintptr_t) p != sorted_output[ans_index++]){
+		printf("the expected order is not same as the leaves order\n");
+		exit(-1);
+	    }
 	}
 	ll_end_iter(last_node->keys);
-	printf("] => ");
-
-	if ((last_node = last_node->next) == NULL){
-	    printf("NULL\n");
+	if ((last_node = last_node->next) == NULL)
 	    break;
-	}
     }
 
     /* search failure */

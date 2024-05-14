@@ -169,17 +169,12 @@ bpt_get_copied_up_key(linked_list *keys){
  * of keys, from the leaf to upper nodes.
  *
  * The 'new_child' is the pointer of newly genereated child by split,
- * which means its the pointer to the node which has the 'copied_up_key'.
- * Similarly, 'new_child_index' is the index where 'new_child' should be
- * inserted. Those parameter are set by recursive call only.
+ * which points to the node which has the 'copied_up_key'. Similarly,
+ * 'new_child_index' is the index where 'new_child' should be inserted.
+ * Those two parameters are set by recursive call only.
  *
- * Note: In the leaf nodes, the new key-value pair is inserted
+ * Note that on the leaf nodes, the new key-value pair is inserted
  * at aligned index position.
- *
- * The call of ll_asc_insert() for leaf actual value works because
- * of duplicate key rejection. If same value is allowed, the insert
- * position of new child won't be clear to ll_asc_insert for children.
- * In this case, further control of index of insertion would be necessary.
  */
 void
 bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
@@ -197,7 +192,7 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	    ll_asc_insert(curr_node->keys, new_key);
 	    ll_tail_insert(curr_node->children, new_child);
 	}else{
-	    /* Get a copied up key from lower node by recursive call */
+	    /* Get a copied up key from lower node */
 	    printf("debug : (%p) curr_node->children[%d] = child\n",
 		   curr_node,new_child_index);
 	    ll_asc_insert(curr_node->keys, new_key);
@@ -219,25 +214,25 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	/* Split keys and children */
 	right_half = bpt_node_split(t, curr_node);
 
-	printf("debug : left (%d len : %p) => \n", ll_get_length(curr_node->keys), curr_node);
+	printf("debug : left (%d len : %p) => \n",
+	       ll_get_length(curr_node->keys), curr_node);
 	bpt_dump_list(curr_node->keys);
-	printf("debug : right (%d len : %p) => \n", ll_get_length(right_half->keys), right_half);
+	printf("debug : right (%d len : %p) => \n",
+	       ll_get_length(right_half->keys), right_half);
 	bpt_dump_list(right_half->keys);
 
 	/* Get the key that will go up and/or will be deleted */
 	copied_up_key = bpt_get_copied_up_key(right_half->keys);
 
-	/* Connect split leaf nodes */
 	if (curr_node->is_leaf == true){
+	    /* Connect split leaf nodes */
 	    right_half->next = curr_node->next;
 	    curr_node->next = right_half;
-	}
-
-	/*
-	 * Delete the copied up key and the corresponding child
-	 * if this node is one of upper nodes.
-	 */
-	if (!right_half->is_leaf){
+	}else{
+	    /*
+	     * Delete the copied up key and the corresponding child
+	     * if this node is one of upper nodes.
+	     */
 	    (void) ll_get_first_node(right_half->keys);
 	    (void) ll_get_first_node(right_half->children);
 	    printf("Removed internal node's key = %lu. Left key num = %d\n",
@@ -245,7 +240,7 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	}
 
 	if (!curr_node->parent){
-	    /* Create the top root */
+	    /* Create the new root */
 	    bpt_node *new_top;
 
 	    assert(curr_node->is_root == true);
@@ -270,19 +265,14 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	     * upper node of the index to insert a new split right child.
 	     *
 	     * To determine the new child index, we will iterate all children
-	     * that the current stores. If the original split node is the
-	     * first one, then the insert index is zero, before all the keys
-	     * in the split node must be smaller than the first key value
-	     * in the upper node. If not, the new split node should be located
-	     * after the split counterpart.
+	     * that the current node's parent stores. The new child should be
+	     * placed right after the current node.
 	     */
 	    int index;
 
-	    for (index = 0; index < ll_get_length(curr_node->parent->children); index++){
-		if (curr_node == ll_get_index_node(curr_node->parent->children, index)){
+	    for (index = 0; index < ll_get_length(curr_node->parent->children); index++)
+		if (curr_node == ll_get_index_node(curr_node->parent->children, index))
 		    break;
-		}
-	    }
 
 	    printf("Recursive call of bpt_insert() with key = %lu\n",
 		   (uintptr_t) copied_up_key);
@@ -322,7 +312,7 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
 	   (uintptr_t) new_key, curr_node);
 
     /*
-     * If recursive call of bpt_search() receives NULL curr_node,
+     * If recursive call of bpt_search() receives NULL 'curr_node',
      * it means node's children contained NULL value and we tried
      * to search it. Return false.
      */
@@ -340,11 +330,9 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
     children_index = 0;
     curr_keys = curr_node->keys;
 
-    printf("*will loop %d times for search*\n", ll_get_length(curr_keys));
-
     for (iter = 0; iter < ll_get_length(curr_keys); iter++){
 
-	/* We might hit NULL during key iteration. Skip it. */
+	/* We might hit NULL during key iteration. Skip NULL. */
 	if ((existing_key = ll_get_index_node(curr_keys, iter)) == NULL)
 	    continue;
 
