@@ -2,7 +2,7 @@
 G*
 
 # Executables
-exec_*
+run_*
 
 # Prerequisites
 *.d

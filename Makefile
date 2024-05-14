@@ -6,7 +6,7 @@ DEPENDENCY_LIB	= Linked-List
 COMPONENTS	= b_plus_tree.c
 OBJ_COMPONENTS	= b_plus_tree.o
 
-TEST_APP	= exec_bptree
+TEST_APP	= run_bptree
 
 LIB	= libbplustree.a
 
