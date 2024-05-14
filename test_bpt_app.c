@@ -383,11 +383,16 @@ insert_and_create_three_depth_tree(void){
 	    break;
 	}
     }
-    printf("-----\n");
 
     /* search failure */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 0, &last_node) == false);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 17, &last_node) == false);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 35, &last_node) == false);
 
     /* search success */
     last_node = NULL;
