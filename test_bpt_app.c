@@ -406,6 +406,51 @@ insert_and_create_three_depth_tree(void){
     assert(last_node != NULL);
 }
 
+static void
+test_even_number_m(void){
+    bpt_tree *tree;
+    bpt_node *last_node;
+    void *p;
+    uintptr_t answer = 1;
+
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free, 4 /* even number */);
+
+    /* Insert 20 keys */
+    for (answer = 20; answer >= 1; answer--)
+	assert(bpt_insert(tree, (void *) answer, &e1) == true);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+    assert(last_node != NULL);
+
+    /* Iterate all the registered keys */
+    answer = 1;
+    while(true){
+	ll_begin_iter(last_node->keys);
+	while((p = ll_get_iter_node(last_node->keys)) != NULL){
+	    if ((uintptr_t) p != answer){
+		printf("the answer is contradicting the order of leaves (%lu vs. %lu)\n",
+		       (uintptr_t) p, (uintptr_t) answer);
+		exit(-1);
+	    }
+	    answer++;
+	}
+	ll_end_iter(last_node->keys);
+	if ((last_node = last_node->next) == NULL)
+	    break;
+    }
+
+    for (answer = 1; answer <= 20; answer++){
+	last_node = NULL;
+	assert(bpt_search(tree->root, (void *) answer, &last_node) == true);
+    }
+}
+
 /*
  * Ignore the values of 'M' in each tree.
  *
@@ -430,6 +475,9 @@ test_bpt_insert(void){
 
     printf("<create depth 3 tree>\n");
     insert_and_create_three_depth_tree();
+
+    printf("<other variant of depth 3 tree>\n");
+    test_even_number_m();
 }
 
 int
