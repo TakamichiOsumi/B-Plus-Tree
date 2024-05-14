@@ -229,12 +229,11 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	    right_half->next = curr_node->next;
 	    curr_node->next = right_half;
 	}else{
-	    /*
-	     * Delete the copied up key and the corresponding child
-	     * if this node is one of upper nodes.
-	     */
-	    (void) ll_get_first_node(right_half->keys);
-	    (void) ll_get_first_node(right_half->children);
+	    void *p;
+
+	    /* Delete the copied up key and the corresponding child */
+	    ll_get_first_node(right_half->keys);
+	    assert((p = ll_get_first_node(right_half->children)) == NULL);
 	    printf("Removed internal node's key = %lu. Left key num = %d\n",
 		   (uintptr_t) copied_up_key, ll_get_length(right_half->keys));
 	}
