@@ -267,11 +267,17 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	     * that the current node's parent stores. The new child should be
 	     * placed right after the current node.
 	     */
-	    int index;
+	    linked_list *parent_children = curr_node->parent->children;
+	    int index = 0;
 
-	    for (index = 0; index < ll_get_length(curr_node->parent->children); index++)
-		if (curr_node == ll_get_index_node(curr_node->parent->children, index))
+	    ll_begin_iter(parent_children);
+	    for (; index < ll_get_length(parent_children); index++)
+		if (curr_node == ll_get_iter_node(parent_children))
 		    break;
+	    ll_end_iter(parent_children);
+
+	    /* We must find the target child */
+	    assert(index < ll_get_length(parent_children));
 
 	    printf("Recursive call of bpt_insert() with key = %lu\n",
 		   (uintptr_t) copied_up_key);
@@ -329,10 +335,10 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
     children_index = 0;
     curr_keys = curr_node->keys;
 
+    ll_begin_iter(curr_keys);
     for (iter = 0; iter < ll_get_length(curr_keys); iter++){
-
 	/* We might hit NULL during key iteration. Skip NULL. */
-	if ((existing_key = ll_get_index_node(curr_keys, iter)) == NULL)
+	if ((existing_key = ll_get_iter_node(curr_keys)) == NULL)
 	    continue;
 
 	diff = curr_keys->key_compare_cb(curr_keys->key_access_cb(existing_key),
@@ -347,6 +353,7 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_explored_node){
 
 	children_index++;
     }
+    ll_end_iter(curr_keys);
 
     if (diff == 0){
 	/* Exact key match at the leaf node level */
