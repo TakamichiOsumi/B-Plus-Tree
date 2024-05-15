@@ -356,7 +356,7 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
     ll_end_iter(keys);
 
     if (diff == 0){
-	/* Exact key match at the leaf node level */
+	/* Exact key match */
 	if (curr_node->is_leaf)
 	    return true;
 	else{
@@ -365,7 +365,7 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 			      new_key, last_node);
 	}
     }else if (diff == 1){
-	/* Found larger key value than the new_key */
+	/* Found larger key value than the 'new_key' */
 	if (curr_node->is_leaf)
 	    return false;
 	else{
@@ -374,11 +374,11 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 			      new_key, last_node);
 	}
     }else{
-	/* Failure. The key was bigger than all the existing keys */
+	/* The key was bigger than all the existing keys */
 	if (curr_node->is_leaf)
 	    return false;
 	else{
-	    /* Search for the rightmost node */
+	    /* Search for the rightmost child */
 	    return bpt_search(bpt_fetch_index_child(curr_node,
 						    ll_get_length(curr_node->children) - 1),
 			      new_key, last_node);
