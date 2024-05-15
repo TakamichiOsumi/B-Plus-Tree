@@ -16,7 +16,7 @@ typedef struct bpt_key {
 typedef struct bpt_tree bpt_tree;
 
 /*
- * Node.
+ * B+ Tree Node
  *
  * Representation of root, internal or leaf nodes
  */
@@ -26,7 +26,7 @@ typedef struct bpt_node {
     bool is_leaf;
 
     /*
-     * 'void *' keys
+     * Keys
      *
      * The max number of keys is 'm - 1'.
      */
@@ -36,13 +36,18 @@ typedef struct bpt_node {
     /*
      * Children
      *
-     * The max number of children is 'm'.
-     * Internal node and root node point to the child
-     * nodes. Otherwise, this points to the records.
+     * The max number of children is 'm'. Both internal
+     * nodes and the root node point to other lower nodes.
+     * Otherwise, this member points to inserted records.
      */
     linked_list *children;
 
     struct bpt_node *parent;
+
+    /*
+     * Build doubly linked list between leaf nodes.
+     */
+    struct bpt_node *prev;
     struct bpt_node *next;
 
 } bpt_node;
@@ -63,7 +68,7 @@ typedef int (*bpt_key_compare_cb)(void *k1, void *k2);
 typedef void (*bpt_free_cb)(void *p);
 
 /*
- * Tree.
+ * B+ Tree
  */
 typedef struct bpt_tree {
 
@@ -81,9 +86,7 @@ bpt_tree *bpt_init(bpt_key_access_cb keys_key_access,
 		   bpt_free_cb keys_key_free,
 		   bpt_key_access_cb children_key_access,
 		   bpt_key_compare_cb children_key_compare,
-		   bpt_free_cb children_key_free,
-		   uint16_t m);
-
+		   bpt_free_cb children_key_free, uint16_t m);
 bool bpt_insert(bpt_tree *bpt, void *key, void *data);
 bool bpt_search(bpt_node *curr_node, void *key,
 		bpt_node **last_explored_node);

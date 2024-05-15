@@ -412,6 +412,7 @@ test_even_number_m(void){
     bpt_node *last_node;
     void *p;
     uintptr_t answer = 1;
+    int i;
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -434,7 +435,7 @@ test_even_number_m(void){
 	ll_begin_iter(last_node->keys);
 	while((p = ll_get_iter_node(last_node->keys)) != NULL){
 	    if ((uintptr_t) p != answer){
-		printf("the answer is contradicting the order of leaves (%lu vs. %lu)\n",
+		printf("the expectation contradicted the order of leaves (%lu vs. %lu)\n",
 		       (uintptr_t) p, (uintptr_t) answer);
 		exit(-1);
 	    }
@@ -448,6 +449,28 @@ test_even_number_m(void){
     for (answer = 1; answer <= 20; answer++){
 	last_node = NULL;
 	assert(bpt_search(tree->root, (void *) answer, &last_node) == true);
+    }
+
+    /* Iterate in reverse order */
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 20, &last_node) == true);
+    assert(last_node != NULL);
+
+    answer = 20;
+    while(true){
+	for (i = ll_get_length(last_node->keys) - 1; i >= 0; i--){
+	    p = ll_get_index_node(last_node->keys, i);
+	    if ((uintptr_t) p != answer){
+		printf("the expectation contradicted the order of leaves (%lu vs. %lu)\n",
+		       (uintptr_t) p, (uintptr_t) answer);
+	    }else{
+		printf("debug : iterating leaf nodes got %lu\n",
+		       (uintptr_t) p);
+	    }
+	    answer--;
+	}
+	if ((last_node = last_node->prev) == NULL)
+	    break;
     }
 }
 

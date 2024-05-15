@@ -41,7 +41,7 @@ bpt_gen_node(void){
     node->is_root = node->is_leaf = false;
     node->n_keys = 0;
     node->keys = node->children = NULL;
-    node->parent = node->next = NULL;
+    node->parent = node->prev = node->next = NULL;
 
     return node;
 }
@@ -73,8 +73,7 @@ bpt_init(bpt_key_access_cb keys_key_access,
 	 bpt_free_cb keys_key_free,
 	 bpt_key_access_cb children_key_access,
 	 bpt_key_compare_cb children_key_compare,
-	 bpt_free_cb children_key_free,
-	 uint16_t m){
+	 bpt_free_cb children_key_free, uint16_t m){
     bpt_tree *tree;
 
     if(m < 3){
@@ -101,11 +100,10 @@ bpt_init(bpt_key_access_cb keys_key_access,
 /*
  * Return the right half node by ll_split().
  *
- * Wrapper function of ll_split() for node split. ll_split
- * returns the *left* half, so swap the return value internally.
- *
- * This is required to connect the split nodes with other
- * existing nodes before and after the split nodes.
+ * ll_split() returns the *left* half, so swap the
+ * return value within this function. This is required
+ * to connect the split nodes with other existing nodes
+ * before and after the two split nodes.
  */
 static bpt_node *
 bpt_node_split(bpt_tree *t, bpt_node *curr_node){
@@ -134,8 +132,8 @@ bpt_node_split(bpt_tree *t, bpt_node *curr_node){
 
     /*
      * Swap the two node to return the right half.
-     * At this moment, the 'half' node has left part of keys and
-     * children.
+     * At this moment, the 'half' node has left part of
+     * keys and children.
      */
     left_keys = half->keys;
     left_children = half->children;
@@ -227,8 +225,17 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 
 	if (curr_node->is_leaf == true){
 	    /* Connect split leaf nodes */
+	    right_half->prev = curr_node;
 	    right_half->next = curr_node->next;
 	    curr_node->next = right_half;
+
+	    /*
+	     * When there is other node on the right side of 'right_half',
+	     * make its 'prev' point to the 'right_half'. Skip if the
+	     * 'right_half' is the rightmost node.
+	     */
+	    if (right_half->next != NULL)
+		right_half->next->prev = right_half;
 	}else{
 	    void *p;
 
