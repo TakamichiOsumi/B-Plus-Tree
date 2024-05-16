@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "b_plus_tree.h"
+#include "../b_plus_tree.h"
 
 typedef struct employee {
     uintptr_t id;
