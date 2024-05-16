@@ -24,7 +24,7 @@ $(TEST_APP): $(OBJ_COMPONENTS)
 .phony: clean test
 
 clean:
-	@rm -rf *.o test/$(TEST_APP) test/$(TEST_APP).dSYM
+	@rm -rf *.o test/$(TEST_APP)*
 	@for dir in $(DEPENDENCY_LIB); do cd $$dir; make clean; cd ..; done
 
 test: library $(TEST_APP)
