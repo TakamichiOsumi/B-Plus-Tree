@@ -478,7 +478,7 @@ static void
 remove_from_one_root(void){
     bpt_tree *tree;
     void *p;
-    uintptr_t answer = 1;
+    uintptr_t answer = 1, answers[] = { 1, 3 };
     int i;
 
     tree = bpt_init(employee_key_access,
@@ -510,6 +510,25 @@ remove_from_one_root(void){
 	    exit(-1);
 	}
 	answer++;
+    }
+    ll_end_iter(tree->root->keys);
+
+    /* failure case */
+    assert(bpt_delete(tree, (void *) 0) == false);
+    assert(ll_get_length(tree->root->keys) == 3);
+
+    /* Removal of second key in keys */
+    assert(bpt_delete(tree, (void *) 2) == true);
+    assert(ll_get_length(tree->root->keys) == 2);
+
+    ll_begin_iter(tree->root->keys);
+    for (i = 0; i < ll_get_length(tree->root->keys); i++){
+	p = ll_get_iter_node(tree->root->keys);
+	if (answers[i] != (uintptr_t) p){
+	    printf("the value is not same as expectation, %lu vs %lu\n",
+		   answers[i], (uintptr_t) p);
+	    exit(-1);
+	}
     }
     ll_end_iter(tree->root->keys);
 }
