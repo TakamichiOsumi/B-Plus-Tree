@@ -394,7 +394,24 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 }
 
 static void
-bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){}
+bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
+    linked_list *keys = curr_node->keys;
+    int min_key;
+
+    min_key = t->m % 2 == 0 ? t->m % 2 - 1 : t->m % 2;
+
+    if (ll_get_length(keys) - 1 >= min_key){
+	if (curr_node->is_leaf){
+	    ll_remove_by_key(keys, removed_key);
+	    /* TODO : Remove the record as well */
+	}else{
+	    ll_remove_by_key(keys, removed_key);
+	    /* TODO : Get the min key from the right child */
+	}
+    }else{
+	/* TODO : merge */
+    }
+}
 
 bool
 bpt_delete(bpt_tree *bpt, void *key){

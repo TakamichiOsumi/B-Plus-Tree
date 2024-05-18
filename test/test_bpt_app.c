@@ -474,6 +474,46 @@ test_even_number_m(void){
     }
 }
 
+static void
+remove_from_one_root(void){
+    bpt_tree *tree;
+    void *p;
+    uintptr_t answer = 1;
+    int i;
+
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free, 5);
+
+    assert(bpt_insert(tree, (void *) 1, &e1) == true);
+    assert(bpt_insert(tree, (void *) 2, &e1) == true);
+    assert(bpt_insert(tree, (void *) 3, &e1) == true);
+    assert(bpt_insert(tree, (void *) 4, &e1) == true);
+
+    /* Set up only one root node */
+    assert(tree->root->is_root == true);
+    assert(tree->root->is_leaf == true);
+    assert(ll_get_length(tree->root->keys) == 4);
+
+    assert(bpt_delete(tree, (void *) 4) == true);
+    assert(ll_get_length(tree->root->keys) == 3);
+
+    ll_begin_iter(tree->root->keys);
+    for (i = 0; i < ll_get_length(tree->root->keys); i++){
+	p = ll_get_iter_node(tree->root->keys);
+	if (answer != (uintptr_t) p){
+	    printf("the value is not same as expectation, %lu vs %lu\n",
+		   answer, (uintptr_t) p);
+	    exit(-1);
+	}
+	answer++;
+    }
+    ll_end_iter(tree->root->keys);
+}
+
 /*
  * Ignore the values of 'M' in each tree.
  *
@@ -503,11 +543,18 @@ test_bpt_insert(void){
     test_even_number_m();
 }
 
+static void
+test_bpt_remove(void){
+    printf("<remove key from 1 node>\n");
+    remove_from_one_root();
+}
+
 int
 main(int argc, char **argv){
 
     test_bpt_search();
     test_bpt_insert();
+    test_bpt_remove();
 
     printf("All tests are done gracefully\n");
 
