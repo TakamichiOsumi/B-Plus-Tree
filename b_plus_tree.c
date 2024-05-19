@@ -5,6 +5,9 @@
 
 #include "b_plus_tree.h"
 
+#define SAME_PARENT(n1, n2) \
+    (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
+
 static void*
 bpt_malloc(size_t size){
     void *p;
@@ -401,8 +404,8 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 
     min_key = (t->m % 2 == 0) ? (t->m % 2 - 1) : (t->m % 2);
 
-    if (ll_get_length(keys) - 1 > min_key){
-	printf("*debug : Delete key = %lu\n", (uintptr_t) removed_key);
+    if (ll_get_length(keys) - 1 >= min_key){
+	printf("debug : Delete key = %lu\n", (uintptr_t) removed_key);
 
 	if (curr_node->is_leaf){
 	    ll_remove_by_key(keys, removed_key);
@@ -412,48 +415,84 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    /* TODO : Get the min key from the right child */
 	}
     }else{
-	linked_list *ref_keys;
-	bool borrowed = false;
-
-	printf("*merge for %lu*\n", (uintptr_t) removed_key);
+	linked_list *ref_keys, *ref_children;
+	bool left_sibling_exist = false, borrowed_from_left = false,
+	    right_sibling_exist = false, borrowed_from_right = false;
 
 	if (curr_node->is_leaf){
 
-	    if (curr_node->prev != NULL){
-		if (curr_node->prev->parent == curr_node->parent){
-		    ref_keys = curr_node->prev->keys;
-		    if (ll_get_length(ref_keys) - 1 >= min_key){
-			void *largest_key;
+	    if (SAME_PARENT(curr_node, curr_node->prev)){
+		ref_keys = curr_node->prev->keys;
+		ref_children = curr_node->prev->children;
+		left_sibling_exist = true;
 
-			largest_key = ll_tail_remove(ref_keys);
-			borrowed = true;
-			printf("borrowed the largest key = %lu from the left node\n",
-			       (uintptr_t) largest_key);
-		    }else{
-			printf("should merge\n");
+		if (ll_get_length(ref_keys) - 1 >= min_key){
+		    void *largest_key;
+
+		    /* Remove the key of current node */
+		    ll_remove_by_key(curr_node->keys, removed_key);
+
+		    /* Borrow one key and child from left sibling */
+		    largest_key = ll_tail_remove(ref_keys);
+		    ll_insert(curr_node->keys, largest_key);
+		    ll_insert(curr_node->children,
+			      ll_tail_remove(ref_children));
+
+		    borrowed_from_left = true;
+		    printf("debug : borrowed the largest key = %lu from the left sibling\n",
+			   (uintptr_t) largest_key);
+
+		    if (curr_node->parent != NULL){
+			/* Replace parent's index */
+			ll_replace_by_key(curr_node->parent->keys,
+					  removed_key, largest_key);
+			printf("debug : index replaced from %lu to %lu\n",
+			       (uintptr_t) removed_key, (uintptr_t) largest_key);
 		    }
 		}
-	    }
 
-	    if (borrowed != true && curr_node->next != NULL){
-		if (curr_node->next->parent == curr_node->parent){
+		if (borrowed_from_left == false && SAME_PARENT(curr_node, curr_node->next)){
 		    ref_keys = curr_node->next->keys;
+		    ref_children = curr_node->next->children;
+		    right_sibling_exist = true;
+
 		    if (ll_get_length(ref_keys) - 1 >= min_key){
 			void *smallest_key;
 
+			/* Remove the key of current node */
+			ll_remove_by_key(curr_node->keys, removed_key);
+			printf("debug : Delete key = %lu\n", (uintptr_t) removed_key);
+
+			/* Borrow one key and child from right sibling */
 			smallest_key = ll_remove_first_data(ref_keys);
-			borrowed = true;
-			printf("borrowed the smallest key = %lu from the right sibling\n",
+			ll_tail_insert(curr_node->keys, smallest_key);
+			ll_tail_insert(curr_node->children,
+				       ll_remove_first_data(ref_children));
+
+			borrowed_from_right = true;
+			printf("debug : Borrowed the smallest key = %lu from the right sibling\n",
 			       (uintptr_t) smallest_key);
-		    }else{
-			printf("should merge\n");
+
+			if (curr_node->parent != NULL){
+			    ll_replace_by_key(curr_node->parent->keys,
+					      removed_key, smallest_key);
+			    printf("debug : index replaced from %lu to %lu\n",
+				   (uintptr_t) removed_key, (uintptr_t) smallest_key);
+			}
 		    }
 		}
 	    }
 
-	    /* Failed to find available key from both sides */
-	    if (!borrowed)
-		printf("Both sides of nodes aren't available\n");
+	    /*
+	     * Firstly, the number of current node key is smaller than the
+	     * minimum key. Also, failed to find available key from both
+	     * nodes. Merge the current node's keys and next node ones.
+	     */
+	    if (borrowed_from_left == false || borrowed_from_right == false){
+		printf("both sides of nodes aren't available\n");
+		/* Merge nodes */
+		/* Remove the corresponding key for the merged child */
+	    }
 	}else{
 	    printf("remove a key from internal node\n");
 	}

@@ -10,7 +10,7 @@ TEST_APP	= run_bptree
 
 LIB	= libbplustree.a
 
-all: library $(OBJ_COMPONENTS)
+all: library $(OBJ_COMPONENTS) $(TEST_APP)
 
 library:
 	for dir in $(DEPENDENCY_LIB); do make -C $$dir; done

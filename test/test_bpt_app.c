@@ -537,7 +537,9 @@ static void
 remove_from_two_depth_tree(void){
     bpt_tree *tree;
     bpt_node *last_node;
-    uintptr_t i;
+    uintptr_t i, answers[] = { 1, 2, 5, 6 };
+    int ans_index = 0;
+    void *p;
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -572,7 +574,36 @@ remove_from_two_depth_tree(void){
     last_node = NULL;
     bpt_delete(tree, (void *) 4);
     assert(bpt_search(tree->root, (void *) 3, &last_node) == true);
-    /* assert(ll_get_length(last_node->keys) == 1); */
+    assert(ll_get_length(last_node->keys) == 1);
+
+    /*
+     * The internal leaf node has only one child.
+     * The next bpt_delete() should trigger a borrowing.
+     */
+    bpt_delete(tree, (void *) 3);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+
+    while(true){
+	ll_begin_iter(last_node->keys);
+	for (i = 0; i < ll_get_length(last_node->keys); i++){
+	    p = ll_get_iter_data(last_node->keys);
+	    printf("dump : %lu\n", (uintptr_t) p);
+	    if ((uintptr_t) p != answers[ans_index]){
+		fprintf(stderr, "the result is not same as expectation. %lu vs. %lu\n",
+			(uintptr_t) p, (uintptr_t) answers[ans_index]);
+	    }
+	    ans_index++;
+	}
+	ll_end_iter(last_node->keys);
+
+	if ((last_node = last_node->next) == NULL){
+	    break;
+	}
+    }
+
+    /* Conduct another removal.. */
 }
 
 static void
