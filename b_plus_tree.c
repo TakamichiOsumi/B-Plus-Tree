@@ -444,8 +444,10 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 
 		    if (curr_node->parent != NULL){
 			/* Replace parent's index */
-			ll_replace_by_key(curr_node->parent->keys,
-					  removed_key, largest_key);
+			ll_remove_by_key(curr_node->parent->keys,
+					 removed_key);
+			ll_asc_insert(curr_node->parent->keys,
+				      largest_key);
 			printf("debug : index replaced from %lu to %lu\n",
 			       (uintptr_t) removed_key, (uintptr_t) largest_key);
 		    }
@@ -474,8 +476,10 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 			       (uintptr_t) smallest_key);
 
 			if (curr_node->parent != NULL){
-			    ll_replace_by_key(curr_node->parent->keys,
-					      removed_key, smallest_key);
+			    ll_remove_by_key(curr_node->parent->keys,
+					     removed_key);
+			    ll_asc_insert(curr_node->parent->keys,
+					  smallest_key);
 			    printf("debug : index replaced from %lu to %lu\n",
 				   (uintptr_t) removed_key, (uintptr_t) smallest_key);
 			}
