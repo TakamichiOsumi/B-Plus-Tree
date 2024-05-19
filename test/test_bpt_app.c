@@ -333,8 +333,8 @@ insert_and_create_two_depth_tree(void){
     assert(ll_get_length(right->keys) == 3); /* 4, 5, 6 */
 
     /* Check parent/children relationship too */
-    assert(ll_get_index_node(tree->root->children, 0) == left);
-    assert(ll_get_index_node(tree->root->children, 1) == right);
+    assert(ll_ref_index_data(tree->root->children, 0) == left);
+    assert(ll_ref_index_data(tree->root->children, 1) == right);
 }
 
 static void
@@ -371,7 +371,7 @@ insert_and_create_three_depth_tree(void){
 
     while(true){
 	ll_begin_iter(last_node->keys);
-	while((p = ll_get_iter_node(last_node->keys)) != NULL){
+	while((p = ll_get_iter_data(last_node->keys)) != NULL){
 	    if ((uintptr_t) p != sorted_output[ans_index++]){
 		printf("the expected order is not same as the leaves order\n");
 		exit(-1);
@@ -433,7 +433,7 @@ test_even_number_m(void){
     answer = 1;
     while(true){
 	ll_begin_iter(last_node->keys);
-	while((p = ll_get_iter_node(last_node->keys)) != NULL){
+	while((p = ll_get_iter_data(last_node->keys)) != NULL){
 	    if ((uintptr_t) p != answer){
 		printf("the expectation contradicted the order of leaves (%lu vs. %lu)\n",
 		       (uintptr_t) p, (uintptr_t) answer);
@@ -459,7 +459,7 @@ test_even_number_m(void){
     answer = 20;
     while(true){
 	for (i = ll_get_length(last_node->keys) - 1; i >= 0; i--){
-	    p = ll_get_index_node(last_node->keys, i);
+	    p = ll_ref_index_data(last_node->keys, i);
 	    if ((uintptr_t) p != answer){
 		printf("the expectation contradicted the order of leaves (%lu vs. %lu)\n",
 		       (uintptr_t) p, (uintptr_t) answer);
@@ -503,7 +503,7 @@ remove_from_one_root(void){
 
     ll_begin_iter(tree->root->keys);
     for (i = 0; i < ll_get_length(tree->root->keys); i++){
-	p = ll_get_iter_node(tree->root->keys);
+	p = ll_get_iter_data(tree->root->keys);
 	if (answer != (uintptr_t) p){
 	    printf("the value is not same as expectation, %lu vs %lu\n",
 		   answer, (uintptr_t) p);
@@ -523,7 +523,7 @@ remove_from_one_root(void){
 
     ll_begin_iter(tree->root->keys);
     for (i = 0; i < ll_get_length(tree->root->keys); i++){
-	p = ll_get_iter_node(tree->root->keys);
+	p = ll_get_iter_data(tree->root->keys);
 	if (answers[i] != (uintptr_t) p){
 	    printf("the value is not same as expectation, %lu vs %lu\n",
 		   answers[i], (uintptr_t) p);
@@ -533,11 +533,48 @@ remove_from_one_root(void){
     ll_end_iter(tree->root->keys);
 }
 
-/*
- * Ignore the values of 'M' in each tree.
- *
- * That doesn't matter for this set of tests.
- */
+static void
+remove_from_two_depth_tree(void){
+    bpt_tree *tree;
+    bpt_node *last_node;
+    uintptr_t i;
+
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free, 3);
+
+    /* Create the two depth tree */
+    for (i = 1; i <= 6; i++)
+	assert(bpt_insert(tree, (void *) i, &e1) == true);
+
+    /* Is the tree same as the expectation ? */
+    assert(ll_get_length(tree->root->keys) == 2);
+
+    /* the left child */
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+    assert(ll_get_length(last_node->keys) == 2);
+
+    /* the middle child */
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 3, &last_node) == true);
+    assert(ll_get_length(last_node->keys) == 2);
+
+    /* the right child */
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 5, &last_node) == true);
+    assert(ll_get_length(last_node->keys) == 2);
+
+    /* Remove one key from the middle child */
+    last_node = NULL;
+    bpt_delete(tree, (void *) 4);
+    assert(bpt_search(tree->root, (void *) 3, &last_node) == true);
+    /* assert(ll_get_length(last_node->keys) == 1); */
+}
+
 static void
 test_bpt_search(void){
     printf("<search key test from single node>\n");
@@ -566,6 +603,9 @@ static void
 test_bpt_remove(void){
     printf("<remove key from 1 node>\n");
     remove_from_one_root();
+
+    printf("<remove key from 3 nodes>\n");
+    remove_from_two_depth_tree();
 }
 
 int
