@@ -42,13 +42,39 @@ employee_free(void *data){}
 /*
  * linked_list *children
  *
- * Will store employee *. Return one id by casting data
- * to employee *. The comparison of two ids will be done
- * with employee_key_compare().
+ * Will store employee *. The data' key won't be
+ * used at this moment.
  */
 static void *
 employee_key_access_from_employee(void *data){
     return data;
+}
+
+static void
+leaves_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
+    int idx = 0;
+    void *p;
+
+    assert(node != NULL);
+
+    while(true){
+	ll_begin_iter(node->keys);
+
+	/* Check each key in the leaf node */
+	while((p = ll_get_iter_data(node->keys)) != NULL){
+	    if ((uintptr_t) p != answers[idx]){
+		printf("the expected value is not same as leaf node value. %lu vs. %lu\n",
+		       (uintptr_t) p, answers[idx]);
+		exit(-1);
+	    }
+	    idx++;
+	}
+	ll_end_iter(node->keys);
+
+	/* Move to the next leaf node */
+	if ((node = node->next) == NULL)
+	    break;
+    }
 }
 
 employee *iter,
@@ -117,11 +143,11 @@ search_two_depth_nodes_test(void){
 		    employee_free,
 		    3);
 
-    /* the root node */
+    /* Root node */
     ll_asc_insert(tree->root->keys, (void *) 4);
     tree->root->is_leaf = false;
 
-    /* the left leaf node */
+    /* Left leaf node */
     left = bpt_gen_root_callbacks_node(tree);
     ll_asc_insert(left->keys, (void *) 1);
     ll_asc_insert(left->keys, (void *) 2);
@@ -131,7 +157,7 @@ search_two_depth_nodes_test(void){
     left->is_leaf = true;
     left->parent = tree->root;
 
-    /* the right leaf node */
+    /* Right leaf node */
     right = bpt_gen_root_callbacks_node(tree);
     ll_asc_insert(right->keys, (void *) 4);
     ll_asc_insert(right->keys, (void *) 5);
@@ -170,12 +196,12 @@ search_two_depth_nodes_test(void){
 static void
 search_three_depth_nodes_test(void){
     bpt_tree *tree;
-    /* internal nodes */
+    /* Internal nodes */
     bpt_node *left_internal, *right_internal;
-    /* leaf nodes */
+    /* Leaf nodes */
     bpt_node *leftmost, *second_from_left, *middle,
 	*second_from_right, *rightmost;
-    /* for test */
+    /* For test */
     bpt_node *last_node;
 
     tree = bpt_init(employee_key_access,
@@ -316,7 +342,7 @@ insert_and_create_two_depth_tree(void){
     assert(bpt_insert(tree, (void *) 1, &e1) == true);
     assert(bpt_insert(tree, (void *) 2, &e2) == true);
     assert(bpt_insert(tree, (void *) 3, &e3) == true);
-    assert(bpt_insert(tree, (void *) 3, &e3) == false); /* duplicate key */
+    assert(bpt_insert(tree, (void *) 3, &e3) == false); /* Duplicate key */
     assert(bpt_insert(tree, (void *) 4, &e4) == true);
     assert(bpt_insert(tree, (void *) 5, &e5) == true);
     assert(bpt_insert(tree, (void *) 6, &e6) == true);
@@ -341,8 +367,7 @@ static void
 insert_and_create_three_depth_tree(void){
     bpt_tree *tree;
     bpt_node *last_node;
-    void *p;
-    int ans_index = 0, sorted_output[] =
+    uintptr_t sorted_output[] =
 	{ 2, 4, 9, 10, 11, 12, 14, 15, 18, 20, 30};
 
     tree = bpt_init(employee_key_access,
@@ -364,25 +389,14 @@ insert_and_create_three_depth_tree(void){
     assert(bpt_insert(tree, (void *) 14, &e1) == true);
     assert(bpt_insert(tree, (void *) 20, &e1) == true);
 
-    /* debug */
+    /* Debug */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 4, &last_node) == true);
-    assert(last_node != NULL);
 
-    while(true){
-	ll_begin_iter(last_node->keys);
-	while((p = ll_get_iter_data(last_node->keys)) != NULL){
-	    if ((uintptr_t) p != sorted_output[ans_index++]){
-		printf("the expected order is not same as the leaves order\n");
-		exit(-1);
-	    }
-	}
-	ll_end_iter(last_node->keys);
-	if ((last_node = last_node->next) == NULL)
-	    break;
-    }
+    /* Check the order of leaf node values */
+    leaves_keys_comparison_test(last_node, sorted_output);
 
-    /* search failure */
+    /* Search failure */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 0, &last_node) == false);
 
@@ -392,7 +406,7 @@ insert_and_create_three_depth_tree(void){
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 35, &last_node) == false);
 
-    /* search success */
+    /* Search success */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 20, &last_node) == true);
     assert(last_node != NULL);
@@ -411,7 +425,11 @@ test_even_number_m(void){
     bpt_tree *tree;
     bpt_node *last_node;
     void *p;
-    uintptr_t answer = 1;
+    uintptr_t answer = 1,
+	answers[] = { 1, 2, 3, 4, 5,
+		      6, 7, 8, 9, 10,
+		      11, 12, 13, 14, 15,
+		      16, 17, 18, 19, 20 };
     int i;
 
     tree = bpt_init(employee_key_access,
@@ -427,25 +445,11 @@ test_even_number_m(void){
 
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    assert(last_node != NULL);
 
     /* Iterate all the registered keys */
-    answer = 1;
-    while(true){
-	ll_begin_iter(last_node->keys);
-	while((p = ll_get_iter_data(last_node->keys)) != NULL){
-	    if ((uintptr_t) p != answer){
-		printf("the expectation contradicted the order of leaves (%lu vs. %lu)\n",
-		       (uintptr_t) p, (uintptr_t) answer);
-		exit(-1);
-	    }
-	    answer++;
-	}
-	ll_end_iter(last_node->keys);
-	if ((last_node = last_node->next) == NULL)
-	    break;
-    }
+    leaves_keys_comparison_test(last_node, answers);
 
+    /* All search should be successful */
     for (answer = 1; answer <= 20; answer++){
 	last_node = NULL;
 	assert(bpt_search(tree->root, (void *) answer, &last_node) == true);
@@ -513,7 +517,7 @@ remove_from_one_root(void){
     }
     ll_end_iter(tree->root->keys);
 
-    /* failure case */
+    /* Failure case */
     assert(bpt_delete(tree, (void *) 0) == false);
     assert(ll_get_length(tree->root->keys) == 3);
 
@@ -538,9 +542,8 @@ remove_from_two_depth_tree(void){
     bpt_tree *tree;
     bpt_node *last_node;
     uintptr_t i,
-	answers1[] = { 1, 2, 5, 6 }, answers2[] = { 1, 5, 6 };
-    int ans_index;
-    void *p;
+	answers1[] = { 1, 2, 5, 6 },
+	answers2[] = { 1, 5, 6 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -583,50 +586,14 @@ remove_from_two_depth_tree(void){
     /* Iterate all leaf nodes */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-
-    ans_index = 0;
-    while(true){
-	ll_begin_iter(last_node->keys);
-	for (i = 0; i < ll_get_length(last_node->keys); i++){
-	    p = ll_get_iter_data(last_node->keys);
-	    if ((uintptr_t) p != answers1[ans_index]){
-		fprintf(stderr, "the result is not same as expectation. %lu vs. %lu\n",
-			(uintptr_t) p, (uintptr_t) answers1[ans_index]);
-		exit(-1);
-	    }
-	    ans_index++;
-	}
-	ll_end_iter(last_node->keys);
-
-	if ((last_node = last_node->next) == NULL){
-	    break;
-	}
-    }
+    leaves_keys_comparison_test(last_node, answers1);
 
     /* Another removal which triggers borrowing from right child */
     bpt_delete(tree, (void *) 2);
 
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-
-    ans_index = 0;
-    while(true){
-	ll_begin_iter(last_node->keys);
-	for (i = 0; i < ll_get_length(last_node->keys); i++){
-	    p = ll_get_iter_data(last_node->keys);
-	    if ((uintptr_t) p != answers2[ans_index]){
-		fprintf(stderr, "the result is not same as expectation. %lu vs. %lu\n",
-			(uintptr_t) p, (uintptr_t) answers2[ans_index]);
-		exit(-1);
-	    }
-	    ans_index++;
-	}
-	ll_end_iter(last_node->keys);
-
-	if ((last_node = last_node->next) == NULL){
-	    break;
-	}
-    }
+    leaves_keys_comparison_test(last_node, answers2);
 }
 
 static void
@@ -655,10 +622,10 @@ test_bpt_insert(void){
 
 static void
 test_bpt_remove(void){
-    printf("<remove key from 1 node>\n");
+    printf("<remove key from 1 root node>\n");
     remove_from_one_root();
 
-    printf("<remove key from 3 nodes>\n");
+    printf("<remove key from depth 2 tree>\n");
     remove_from_two_depth_tree();
 }
 
