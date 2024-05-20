@@ -5,8 +5,10 @@
 
 #include "b_plus_tree.h"
 
-#define SAME_PARENT(n1, n2) \
+#define HAVE_SAME_PARENT(n1, n2) \
     (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
+
+/* static void bpt_borrow_key_from_sibling(){} */
 
 static void*
 bpt_malloc(size_t size){
@@ -421,7 +423,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 
 	if (curr_node->is_leaf){
 
-	    if (SAME_PARENT(curr_node, curr_node->prev)){
+	    if (HAVE_SAME_PARENT(curr_node, curr_node->prev)){
 		ref_keys = curr_node->prev->keys;
 		ref_children = curr_node->prev->children;
 		left_sibling_exist = true;
@@ -453,7 +455,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 		    }
 		}
 
-		if (borrowed_from_left == false && SAME_PARENT(curr_node, curr_node->next)){
+		if (borrowed_from_left == false && HAVE_SAME_PARENT(curr_node, curr_node->next)){
 		    ref_keys = curr_node->next->keys;
 		    ref_children = curr_node->next->children;
 		    right_sibling_exist = true;
