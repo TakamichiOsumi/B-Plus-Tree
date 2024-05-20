@@ -51,8 +51,29 @@ employee_key_access_from_employee(void *data){
 }
 
 static void
+leaf_keys_comparison_test(linked_list *keys, uintptr_t answers[]){
+    int i;
+    void *p;
+
+    assert(keys != NULL);
+
+    ll_begin_iter(keys);
+    for (i = 0; i < ll_get_length(keys); i++){
+	p = ll_get_iter_data(keys);
+	if ((uintptr_t) p != answers[i]){
+	    printf("the value is not same as expectation, %lu vs %lu\n",
+		   (uintptr_t) p, answers[i]);
+	    exit(-1);
+	}else{
+	    printf("found %lu expectedly\n", answers[i]);
+	}
+    }
+    ll_end_iter(keys);
+}
+
+static void
 leaves_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
-    int idx = 0;
+    int i = 0;
     void *p;
 
     assert(node != NULL);
@@ -62,12 +83,14 @@ leaves_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 
 	/* Check each key in the leaf node */
 	while((p = ll_get_iter_data(node->keys)) != NULL){
-	    if ((uintptr_t) p != answers[idx]){
+	    if ((uintptr_t) p != answers[i]){
 		printf("the expected value is not same as leaf node value. %lu vs. %lu\n",
-		       (uintptr_t) p, answers[idx]);
+		       (uintptr_t) p, answers[i]);
 		exit(-1);
+	    }else{
+		printf("found %lu expectedly\n", answers[i]);
 	    }
-	    idx++;
+	    i++;
 	}
 	ll_end_iter(node->keys);
 
@@ -481,9 +504,8 @@ test_even_number_m(void){
 static void
 remove_from_one_root(void){
     bpt_tree *tree;
-    void *p;
-    uintptr_t answer = 1, answers[] = { 1, 3 };
-    int i;
+    uintptr_t answers1[] = { 1, 2, 3 },
+	answers2[] = { 1, 3 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -504,18 +526,7 @@ remove_from_one_root(void){
 
     assert(bpt_delete(tree, (void *) 4) == true);
     assert(ll_get_length(tree->root->keys) == 3);
-
-    ll_begin_iter(tree->root->keys);
-    for (i = 0; i < ll_get_length(tree->root->keys); i++){
-	p = ll_get_iter_data(tree->root->keys);
-	if (answer != (uintptr_t) p){
-	    printf("the value is not same as expectation, %lu vs %lu\n",
-		   answer, (uintptr_t) p);
-	    exit(-1);
-	}
-	answer++;
-    }
-    ll_end_iter(tree->root->keys);
+    leaf_keys_comparison_test(tree->root->keys, answers1);
 
     /* Failure case */
     assert(bpt_delete(tree, (void *) 0) == false);
@@ -525,16 +536,7 @@ remove_from_one_root(void){
     assert(bpt_delete(tree, (void *) 2) == true);
     assert(ll_get_length(tree->root->keys) == 2);
 
-    ll_begin_iter(tree->root->keys);
-    for (i = 0; i < ll_get_length(tree->root->keys); i++){
-	p = ll_get_iter_data(tree->root->keys);
-	if (answers[i] != (uintptr_t) p){
-	    printf("the value is not same as expectation, %lu vs %lu\n",
-		   answers[i], (uintptr_t) p);
-	    exit(-1);
-	}
-    }
-    ll_end_iter(tree->root->keys);
+    leaf_keys_comparison_test(tree->root->keys, answers2);
 }
 
 static void
