@@ -229,20 +229,20 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	/* Get the key that will go up and/or will be deleted */
 	copied_up_key = bpt_get_copied_up_key(right_half->keys);
 
-	if (curr_node->is_leaf == true){
-	    /* Connect split leaf nodes */
-	    right_half->prev = curr_node;
-	    right_half->next = curr_node->next;
-	    curr_node->next = right_half;
+	/*
+	 * Connect split nodes at the same depth.
+	 *
+	 * When there is other node on the right side of 'right_half',
+	 * make its 'prev' point to the 'right_half'. Skip if the
+	 * 'right_half' is the rightmost node.
+	 */
+	right_half->prev = curr_node;
+	right_half->next = curr_node->next;
+	curr_node->next = right_half;
+	if (right_half->next != NULL)
+	    right_half->next->prev = right_half;
 
-	    /*
-	     * When there is other node on the right side of 'right_half',
-	     * make its 'prev' point to the 'right_half'. Skip if the
-	     * 'right_half' is the rightmost node.
-	     */
-	    if (right_half->next != NULL)
-		right_half->next->prev = right_half;
-	}else{
+	if (!curr_node->is_leaf){
 	    void *p;
 
 	    /* Delete the copied up key and the corresponding child */
