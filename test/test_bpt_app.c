@@ -391,7 +391,7 @@ insert_and_create_three_depth_tree(void){
     bpt_tree *tree;
     bpt_node *last_node;
     uintptr_t sorted_output[] =
-	{ 2, 4, 9, 10, 11, 12, 14, 15, 18, 20, 30};
+	{ 2, 4, 9, 10, 11, 12, 14, 15, 18, 20, 30 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
