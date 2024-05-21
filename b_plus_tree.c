@@ -399,6 +399,46 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
     }
 }
 
+/*
+ * Return the minimum key from one subtree.
+ *
+ * Go down the subtree until we reach the leftmost
+ * child of the leaf node.
+ */
+static void *
+bpt_ref_subtree_minimum_key(bpt_node *node){
+    while(!node->is_leaf)
+	node = (bpt_node *) node->children->head->data;
+
+    return node->keys->head->data;
+}
+
+static bpt_node *
+bpt_ref_right_child_by_key(bpt_node *node, void *key){
+    bpt_node *key_iter, *child_iter, *right_child;
+
+    ll_begin_iter(node->keys);
+    ll_begin_iter(node->children);
+    while(true){
+	key_iter = ll_get_iter_data(node->keys);
+	child_iter = ll_get_iter_data(node->children);
+
+	if (key_iter == key){
+	    /* The right child for the key is the next pointer */
+	    right_child = ll_get_iter_data(node->children);
+	    assert(right_child != NULL);
+
+	    return (bpt_node *) right_child;
+	}
+    }
+    ll_end_iter(node->keys);
+    ll_end_iter(node->children);
+
+    assert(0); /* Must be unreachable */
+
+    return NULL; /* Make compiler silent */
+}
+
 static void
 bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
     linked_list *keys = curr_node->keys;
@@ -413,8 +453,27 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    ll_remove_by_key(keys, removed_key);
 	    /* TODO : Remove the record as well */
 	}else{
-	    ll_remove_by_key(keys, removed_key);
-	    /* TODO : Get the min key from the right child */
+	    void *deleted_key;
+
+	    /* Does the key exist in this node ? */
+	    deleted_key = ll_remove_by_key(keys, removed_key);
+
+	    if (deleted_key != NULL){
+		void *min_key;
+		bpt_node *right_child;
+
+		right_child = bpt_ref_right_child_by_key(curr_node, removed_key);
+		assert((min_key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
+		printf("debug : %lu was removed and %lu was inserted as the min key\n",
+		       (uintptr_t) removed_key, (uintptr_t) min_key);
+		ll_asc_insert(keys, min_key);
+	    }
+
+	    /*
+	     * This internal node might or might not have the key.
+	     * Just Continue to update the indexes. Go up.
+	     */
+	    /* bpt_delete_internal(); */
 	}
     }else{
 	linked_list *ref_keys, *ref_children;
@@ -496,8 +555,8 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	     */
 	    if (borrowed_from_left == false || borrowed_from_right == false){
 		printf("both sides of nodes aren't available\n");
+
 		/* Merge nodes */
-		/* Remove the corresponding key for the merged child */
 	    }
 	}else{
 	    printf("remove a key from internal node\n");
