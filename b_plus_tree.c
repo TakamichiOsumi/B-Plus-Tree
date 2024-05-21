@@ -8,8 +8,6 @@
 #define HAVE_SAME_PARENT(n1, n2) \
     (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
 
-/* static void bpt_borrow_key_from_sibling(){} */
-
 static void*
 bpt_malloc(size_t size){
     void *p;
@@ -451,14 +449,13 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 
 	if (curr_node->is_leaf){
 	    ll_remove_by_key(keys, removed_key);
-	    /* TODO : Remove the record as well */
+	    /* Remove the record as well */
 	}else{
-	    void *deleted_key;
-
-	    /* Does the key exist in this node ? */
-	    deleted_key = ll_remove_by_key(keys, removed_key);
-
-	    if (deleted_key != NULL){
+	    /*
+	     * Does the key exist in the indexes ?
+	     * This internal node might or might not have the key.
+	     */
+	    if (ll_remove_by_key(keys, removed_key) != NULL){
 		void *min_key;
 		bpt_node *right_child;
 
@@ -468,81 +465,83 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 		       (uintptr_t) removed_key, (uintptr_t) min_key);
 		ll_asc_insert(keys, min_key);
 	    }
-
-	    /*
-	     * This internal node might or might not have the key.
-	     * Just Continue to update the indexes. Go up.
-	     */
-	    /* bpt_delete_internal(); */
 	}
+
+	/*
+	 * Continue to update the indexes. Go up by recursive call.
+	 */
+	if (!curr_node->is_root)
+	    bpt_delete_internal(t, curr_node->parent, removed_key);
     }else{
 	linked_list *ref_keys, *ref_children;
 	bool left_sibling_exist = false, borrowed_from_left = false,
 	    right_sibling_exist = false, borrowed_from_right = false;
+	void *borrowed_key;
 
 	if (curr_node->is_leaf){
 
 	    if (HAVE_SAME_PARENT(curr_node, curr_node->prev)){
+
 		ref_keys = curr_node->prev->keys;
 		ref_children = curr_node->prev->children;
 		left_sibling_exist = true;
 
 		if (ll_get_length(ref_keys) - 1 >= min_key){
-		    void *largest_key;
-
 		    /* Remove the key of current node */
 		    ll_remove_by_key(curr_node->keys, removed_key);
 
+		    printf("debug : Delete key = %lu\n", (uintptr_t) removed_key);
+
 		    /* Borrow one key and child from left sibling */
-		    largest_key = ll_tail_remove(ref_keys);
-		    ll_insert(curr_node->keys, largest_key);
+		    borrowed_key = ll_tail_remove(ref_keys);
+		    ll_insert(curr_node->keys, borrowed_key);
 		    ll_insert(curr_node->children,
 			      ll_tail_remove(ref_children));
 
 		    borrowed_from_left = true;
-		    printf("debug : borrowed the largest key = %lu from the left sibling\n",
-			   (uintptr_t) largest_key);
+		    printf("debug : borrowed the max key = %lu from the left sibling\n",
+			   (uintptr_t) borrowed_key);
 
 		    if (curr_node->parent != NULL){
 			/* Replace parent's index */
 			ll_remove_by_key(curr_node->parent->keys,
 					 removed_key);
 			ll_asc_insert(curr_node->parent->keys,
-				      largest_key);
+				      borrowed_key);
 			printf("debug : index replaced from %lu to %lu\n",
-			       (uintptr_t) removed_key, (uintptr_t) largest_key);
+			       (uintptr_t) removed_key, (uintptr_t) borrowed_key);
 		    }
 		}
 
-		if (borrowed_from_left == false && HAVE_SAME_PARENT(curr_node, curr_node->next)){
+		if (!borrowed_from_left && HAVE_SAME_PARENT(curr_node, curr_node->next)){
+
 		    ref_keys = curr_node->next->keys;
 		    ref_children = curr_node->next->children;
 		    right_sibling_exist = true;
 
 		    if (ll_get_length(ref_keys) - 1 >= min_key){
-			void *smallest_key;
-
 			/* Remove the key of current node */
 			ll_remove_by_key(curr_node->keys, removed_key);
+
 			printf("debug : Delete key = %lu\n", (uintptr_t) removed_key);
 
 			/* Borrow one key and child from right sibling */
-			smallest_key = ll_remove_first_data(ref_keys);
-			ll_tail_insert(curr_node->keys, smallest_key);
+			borrowed_key = ll_remove_first_data(ref_keys);
+			ll_tail_insert(curr_node->keys, borrowed_key);
 			ll_tail_insert(curr_node->children,
 				       ll_remove_first_data(ref_children));
 
 			borrowed_from_right = true;
-			printf("debug : Borrowed the smallest key = %lu from the right sibling\n",
-			       (uintptr_t) smallest_key);
+			printf("debug : Borrowed the min key = %lu from the right sibling\n",
+			       (uintptr_t) borrowed_key);
 
 			if (curr_node->parent != NULL){
 			    ll_remove_by_key(curr_node->parent->keys,
 					     removed_key);
 			    ll_asc_insert(curr_node->parent->keys,
-					  smallest_key);
+					  borrowed_key);
 			    printf("debug : index replaced from %lu to %lu\n",
-				   (uintptr_t) removed_key, (uintptr_t) smallest_key);
+				   (uintptr_t) removed_key, (uintptr_t) borrowed_key);
 			}
 		    }
 		}
@@ -557,6 +556,23 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 		printf("both sides of nodes aren't available\n");
 
 		/* Merge nodes */
+		if (left_sibling_exist){
+		    /*
+		     * Remove the index key between two children,
+		     * the left child and the current node.
+		     */
+		}else if (right_sibling_exist){
+		    /*
+		     * Remove the index key between two children,
+		     * the current node and the right child.
+		     */
+		}else{
+		    /*
+		     * Well, we don't have any available siblings.
+		     * Remove the key. This node should be the root.
+		     */
+		    ll_remove_by_key(curr_node->keys, removed_key);
+		}
 	    }
 	}else{
 	    printf("remove a key from internal node\n");
