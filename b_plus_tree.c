@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "Linked-List/linked_list.h"
 
 #include "b_plus_tree.h"
 
@@ -318,7 +319,7 @@ bpt_insert(bpt_tree *t, void *new_key, void *new_data){
 }
 
 static bpt_node *
-bpt_fetch_index_child(bpt_node *curr_node, int index){
+bpt_ref_index_child(bpt_node *curr_node, int index){
     return (bpt_node *) ll_ref_index_data(curr_node->children, index);
 }
 
@@ -372,7 +373,7 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 	    return true;
 	else{
 	    /* Search for the right child */
-	    return bpt_search(bpt_fetch_index_child(curr_node, children_index + 1),
+	    return bpt_search(bpt_ref_index_child(curr_node, children_index + 1),
 			      new_key, last_node);
 	}
     }else if (diff == 1){
@@ -381,7 +382,7 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 	    return false;
 	else{
 	    /* Search for the left child */
-	    return bpt_search(bpt_fetch_index_child(curr_node, children_index),
+	    return bpt_search(bpt_ref_index_child(curr_node, children_index),
 			      new_key, last_node);
 	}
     }else{
@@ -390,8 +391,8 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 	    return false;
 	else{
 	    /* Search for the rightmost child */
-	    return bpt_search(bpt_fetch_index_child(curr_node,
-						    ll_get_length(curr_node->children) - 1),
+	    return bpt_search(bpt_ref_index_child(curr_node,
+						  ll_get_length(curr_node->children) - 1),
 			      new_key, last_node);
 	}
     }
@@ -435,6 +436,48 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
     assert(0); /* Must be unreachable */
 
     return NULL; /* Make compiler silent */
+}
+
+/*
+ * Don't expect children can perform key_access_cb and
+ * key_compare_cb.
+ */
+static void
+bpt_merge_nodes(bpt_node *curr_node, bool with_right){
+    linked_list *merged_keys;
+    bpt_node *curr_child;
+    node *node;
+
+    /* Merge keys */
+    merged_keys = ll_merge(curr_node->prev->keys,
+			   curr_node->keys);
+    if (with_right){
+	/* Merge children of children and next node */
+	while(ll_get_length(curr_node->next->children) > 0)
+	    ll_tail_insert(curr_node->children,
+			   ll_remove_first_data(curr_node->next->children));
+	node = curr_node->children->head;
+    }else{
+	/* Merge children of prev node and curr_node */
+	while(ll_get_length(curr_node->children) > 0)
+	    ll_tail_insert(curr_node->prev->children,
+			   ll_remove_first_data(curr_node->children));
+	node = curr_node->prev->children->head;
+    }
+
+    while(true){
+	curr_child = (bpt_node *) node->data;
+
+	if (with_right && curr_child == curr_node){
+	    printf("debug : found the curr_node to merge with right child\n");
+	}else if (!with_right && curr_child == curr_node->prev){
+	    printf("debug : found the prev node to merge with curr_node\n");
+	}
+
+	if ((node = node->next) == NULL){
+	    break;
+	}
+    }
 }
 
 static void
@@ -550,22 +593,19 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    /*
 	     * Firstly, the number of current node key is smaller than the
 	     * minimum key. Also, failed to find available key from both
-	     * nodes. Merge the current node's keys and next node ones.
+	     * nodes.
+	     *
+	     * Merge the current node's keys and next node ones.
 	     */
 	    if (borrowed_from_left == false || borrowed_from_right == false){
+
 		printf("both sides of nodes aren't available\n");
 
 		/* Merge nodes */
 		if (left_sibling_exist){
-		    /*
-		     * Remove the index key between two children,
-		     * the left child and the current node.
-		     */
+		    /* bpt_merge_nodes(curr_node, true); */
 		}else if (right_sibling_exist){
-		    /*
-		     * Remove the index key between two children,
-		     * the current node and the right child.
-		     */
+		    /* bpt_merge_nodes(curr_node, false); */
 		}else{
 		    /*
 		     * Well, we don't have any available siblings.
