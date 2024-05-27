@@ -86,7 +86,7 @@ leaves_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 	    if ((uintptr_t) p != answers[i]){
 		printf("the expected value is not same as leaf node value. %lu vs. %lu\n",
 		       (uintptr_t) p, answers[i]);
-		exit(-1);
+		assert(0);
 	    }else{
 		printf("found %lu expectedly\n", answers[i]);
 	    }
@@ -576,24 +576,21 @@ remove_from_two_depth_tree(void){
     assert(bpt_search(tree->root, (void *) 5, &last_node) == true);
     assert(ll_get_length(last_node->keys) == 2);
 
-    /* Remove one key from the middle child */
+    /* Removal of oone key from the middle child */
     last_node = NULL;
     bpt_delete(tree, (void *) 4);
     assert(bpt_search(tree->root, (void *) 3, &last_node) == true);
     assert(ll_get_length(last_node->keys) == 1);
 
-    /* Removal which triggers borrowing from left child */
-    bpt_delete(tree, (void *) 3);
-
-    /* Iterate all leaf nodes */
+    /* Removal to trigger borrowing from left child */
     last_node = NULL;
+    bpt_delete(tree, (void *) 3);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
     leaves_keys_comparison_test(last_node, answers1);
 
-    /* Another removal which triggers borrowing from right child */
-    bpt_delete(tree, (void *) 2);
-
+    /* Removal to trigger borrowing from right child */
     last_node = NULL;
+    bpt_delete(tree, (void *) 2);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
     leaves_keys_comparison_test(last_node, answers2);
 }
