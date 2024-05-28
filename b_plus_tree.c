@@ -478,6 +478,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	curr_child = (bpt_node *) node->data;
 
 	if (with_right && curr_child == curr_node){
+	    /* Remove the next node of the current node */
 	    printf("debug : found the curr_node to merge with right child\n");
 	    removed_child = curr_child->next;
 	    if (curr_node->next->next)
@@ -485,6 +486,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	    curr_node->next = curr_node->next->next;
 	    break;
 	}else if (!with_right && curr_child == curr_node->prev){
+	    /* Remove the current node */
 	    printf("debug : found the prev node to merge with curr_node\n");
 	    removed_child = curr_node;
 	    if (curr_node->next)
@@ -499,7 +501,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	index++;
     }
 
-    /* Remove a key which became unnecessary by merge */
+    /* Remove a key which has become unnecessary by merge */
     assert((deleted_key = ll_index_remove(curr_node->parent->keys, index)) != NULL);
     /* Detach the removed child from the parent children as well. */
     assert(ll_index_remove(curr_node->parent->children, index + 1) != NULL);
@@ -539,7 +541,7 @@ bpt_replace_index(bpt_tree *t, bpt_node *curr_node, bool from_right){
      * Iterate key and child simultaneously.
      *
      * When we find the pointer of 'curr_node', we can tell which
-     * key to remove in the parent's node.
+     * key to remove from the parent's node.
      */
     ll_begin_iter(curr_node->parent->keys);
     ll_begin_iter(curr_node->parent->children);
@@ -591,14 +593,14 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	if (curr_node->is_leaf){
 	    ll_remove_by_key(curr_node->keys, removed_key);
 	    curr_node->n_keys--;
-	    /* Remove the record as well */
+	    /* TODO : Remove the record as well */
 	}else{
 	    /*
 	     * This internal node might or might not have the key.
 	     * If it has the key, remove and update the index.
 	     */
 	    if (ll_has_key(curr_node->keys, removed_key)){
-		/* Only update indexes */
+		/* Updating index copies the reference of the right child's minimum key */
 		void *min_key;
 		bpt_node *right_child;
 
@@ -631,7 +633,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    return;
 	}else{
 	    if (!curr_node->is_leaf){
-		/* Only update indexes */
+		/* Updating index copies the reference of the right child's minimum key */
 		void *min_key;
 		bpt_node *right_child;
 
@@ -707,12 +709,15 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 
 	    if (has_left_sibling){
 		bpt_merge_nodes(curr_node, false);
+		/*
+		 * Note : Don't interact with the curr_node's 'keys'
+		 * and 'children' from here. It's already merged with
+		 * the previous node.
+		 *
+		 * Other attributes are fine.
+		 */
 	    }else if (has_right_sibling){
 		bpt_merge_nodes(curr_node, true);
-		/*
-		 * Note : Don't touch the empty curr_node from here.
-		 * It's already merged with the previous node.
-		 */
 	    }else{
 		/*
 		 * Well, we didn't have any available siblings.
