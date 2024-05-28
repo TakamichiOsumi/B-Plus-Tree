@@ -561,22 +561,18 @@ remove_from_two_depth_tree(void){
     /* Is the tree same as the expectation ? */
     assert(ll_get_length(tree->root->keys) == 2);
 
-    /* Check the left child */
+    /* Basic check */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    assert(ll_get_length(last_node->keys) == 2);
-
-    /* Check the middle child */
+    assert(ll_get_length(last_node->keys) == 2); /* the left child */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 3, &last_node) == true);
-    assert(ll_get_length(last_node->keys) == 2);
-
-    /* Check the right child */
+    assert(ll_get_length(last_node->keys) == 2); /* the middle child */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 5, &last_node) == true);
-    assert(ll_get_length(last_node->keys) == 2);
+    assert(ll_get_length(last_node->keys) == 2); /* the right child */
 
-    /* Removal of oone key from the middle child */
+    /* Removal of one key from the middle child */
     last_node = NULL;
     bpt_delete(tree, (void *) 4);
     assert(bpt_search(tree->root, (void *) 3, &last_node) == true);
@@ -593,6 +589,9 @@ remove_from_two_depth_tree(void){
     bpt_delete(tree, (void *) 2);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
     leaves_keys_comparison_test(last_node, answers2);
+
+    /* Check the index updates */
+    assert(ll_get_length(last_node->parent->keys) == 2);
 }
 
 static void
