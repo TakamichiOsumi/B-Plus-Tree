@@ -648,10 +648,12 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 		return;
 	    }else{
 		ll_remove_by_key(curr_node->keys, removed_key);
+		curr_node->n_keys--;
 	    }
 	}
 
-	printf("debug : delete one of insufficient key = %lu\n", (uintptr_t) removed_key);
+	printf("debug : delete one of insufficient key = %lu from leaf node\n",
+	       (uintptr_t) removed_key);
 
 	/* Is the left node an available sibling to borrow a key ? */
 	if (HAVE_SAME_PARENT(curr_node, curr_node->prev)){
