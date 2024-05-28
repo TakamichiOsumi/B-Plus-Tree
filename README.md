@@ -1,6 +1,6 @@
 # B+ Tree (Variant)
 
-Making submodule for my other repository.
+Making submodule for my other repository. This is a work in progress.
 
 ## Notes
 
