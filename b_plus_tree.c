@@ -597,6 +597,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	     * If it has the key, remove and update the index.
 	     */
 	    if (ll_has_key(curr_node->keys, removed_key)){
+		/* Only update indexes */
 		void *min_key;
 		bpt_node *right_child;
 
@@ -619,24 +620,36 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	void *borrowed_key;
 
 	/* This node may not have the removed key */
-	if (ll_remove_by_key(curr_node->keys, removed_key) == NULL){
+	if (ll_has_key(curr_node->keys, removed_key) != true){
 	    /* Any leaf node must succeed in finding the removed key */
 	    assert(curr_node->is_leaf != true);
 
-	    /*
-	     * If this node is an internal node and has upper node,
-	     * then run the recursive call.
-	     */
 	    if (curr_node->parent)
 		bpt_delete_internal(t, curr_node->parent, removed_key);
 
-	    /*
-	     * Here, we're done with updating all upper nodes by recursive calls.
-	     * Just return.
-	     */
 	    return;
+	}else{
+	    if (!curr_node->is_leaf){
+		/* Only update indexes */
+		void *min_key;
+		bpt_node *right_child;
+
+		right_child = bpt_ref_right_child_by_key(curr_node, removed_key);
+		ll_remove_by_key(curr_node->keys, removed_key);
+		curr_node->n_keys--;
+		assert((min_key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
+		printf("debug : %lu was removed and %lu was inserted as the min key\n",
+		       (uintptr_t) removed_key, (uintptr_t) min_key);
+		ll_asc_insert(curr_node->keys, min_key);
+
+		if (curr_node->parent)
+		    bpt_delete_internal(t, curr_node->parent, removed_key);
+
+		return;
+	    }else{
+		ll_remove_by_key(curr_node->keys, removed_key);
+	    }
 	}
-	curr_node->n_keys--;
 
 	printf("debug : delete one of insufficient key = %lu\n", (uintptr_t) removed_key);
 
