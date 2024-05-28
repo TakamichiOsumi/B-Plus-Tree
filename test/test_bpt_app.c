@@ -72,16 +72,16 @@ leaf_keys_comparison_test(linked_list *keys, uintptr_t answers[]){
 }
 
 static void
-leaves_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
+keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     int i = 0;
     void *p;
 
     assert(node != NULL);
 
     while(true){
-	ll_begin_iter(node->keys);
 
-	/* Check each key in the leaf node */
+	/* Check each key at the same level of node */
+	ll_begin_iter(node->keys);
 	while((p = ll_get_iter_data(node->keys)) != NULL){
 	    if ((uintptr_t) p != answers[i]){
 		printf("the expected value is not same as leaf node value. %lu vs. %lu\n",
@@ -417,7 +417,7 @@ insert_and_create_three_depth_tree(void){
     assert(bpt_search(tree->root, (void *) 4, &last_node) == true);
 
     /* Check the order of leaf node values */
-    leaves_keys_comparison_test(last_node, sorted_output);
+    keys_comparison_test(last_node, sorted_output);
 
     /* Search failure */
     last_node = NULL;
@@ -470,7 +470,7 @@ test_even_number_m(void){
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
 
     /* Iterate all the registered keys */
-    leaves_keys_comparison_test(last_node, answers);
+    keys_comparison_test(last_node, answers);
 
     /* All search should be successful */
     for (answer = 1; answer <= 20; answer++){
@@ -545,7 +545,9 @@ remove_from_two_depth_tree(void){
     bpt_node *last_node;
     uintptr_t i,
 	answers1[] = { 1, 2, 5, 6 },
-	answers2[] = { 1, 5, 6 };
+	answers2[] = { 1, 5, 6 },
+	indexes1[] = { 2, 5 },
+	indexes2[] = { 5, 6 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -582,16 +584,38 @@ remove_from_two_depth_tree(void){
     last_node = NULL;
     bpt_delete(tree, (void *) 3);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    leaves_keys_comparison_test(last_node, answers1);
+    keys_comparison_test(last_node, answers1);
 
-    /* Removal to trigger borrowing from right child */
+    /*
+     * Before we go forward, check the current values of indexes.
+     * Prove that we have '2' and '5' in the root node expectedly.
+     */
+    keys_comparison_test(last_node->parent, indexes1);
+
+    /*
+     * Another Removal. Many things happen by this removal.
+     *
+     * (1) Borrow one key from the right child.
+     * (2) With the 1st step, update the index for the right node.
+     *     This maintains the tree's key and children relationship among
+     *     the middle node and the right node and parent node's key.
+     *     The index key = 5 must be replaced by 6, the minimum value
+     *     of the right child.
+     * (3) Remove the other 2 in the index because it's the removed key.
+     *     The recursive call of bpt_delete_internal() handles this. Then,
+     *     one of the index was removed, so fetch the minimum value of
+     *     the right child, 5 and replace 2 with it.
+     *
+     * After all, the indexes should contain '5' and '6'.
+     */
     last_node = NULL;
     bpt_delete(tree, (void *) 2);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    leaves_keys_comparison_test(last_node, answers2);
+    keys_comparison_test(last_node, answers2);
 
     /* Check the index updates */
     assert(ll_get_length(last_node->parent->keys) == 2);
+    keys_comparison_test(last_node->parent, indexes2);
 }
 
 static void

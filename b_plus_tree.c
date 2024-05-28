@@ -448,8 +448,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     node *node;
     int index = 0;
 
-    printf("bpt_merge_nodes() with %s...\n",
-	   with_right ? "right" : "left");
+    printf("debug : bpt_merge_nodes() with %s...\n", with_right ? "right" : "left");
 
     if (with_right){
 	/* Merging keys */
@@ -474,8 +473,8 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     }
 
     /*
-     * Now 'node' points to the merged children. Search for
-     * the removed child.
+     * Now 'node' points to the merged children. Search for the
+     * removed child.
      */
     while(true){
 	curr_child = (bpt_node *) node->data;
@@ -521,10 +520,16 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 
 static void
 bpt_replace_index(bpt_tree *t, bpt_node *curr_node, bool from_right){
-    void *replaced_index, *prev, *child,
-	*min_key;
+    void *replaced_index, *min_key;
+    void *prev, *child;
     bpt_node *right_child;
 
+    /*
+     * Iterate key and child simultaneously.
+     *
+     * When we find the pointer of curr_node, we can tell which
+     * key to remove in the parent's node.
+     */
     ll_begin_iter(curr_node->parent->keys);
     ll_begin_iter(curr_node->parent->children);
     prev = replaced_index = ll_get_iter_data(curr_node->parent->keys);
@@ -557,6 +562,9 @@ bpt_replace_index(bpt_tree *t, bpt_node *curr_node, bool from_right){
     curr_node->parent->n_keys--;
     assert((min_key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
     ll_asc_insert(curr_node->parent->keys, min_key);
+
+    printf("debug : index key = %lu was replace with %lu\n",
+	   (uintptr_t) replaced_index, (uintptr_t) min_key);
 }
 
 static void
@@ -616,7 +624,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	}
 	curr_node->n_keys--;
 
-	printf("debug : Delete one of insufficient key = %lu\n", (uintptr_t) removed_key);
+	printf("debug : delete one of insufficient key = %lu\n", (uintptr_t) removed_key);
 
 	/* Is the left node an available sibling to borrow a key ? */
 	if (HAVE_SAME_PARENT(curr_node, curr_node->prev)){
@@ -650,17 +658,17 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 		ll_tail_insert(curr_node->keys, borrowed_key);
 		ll_tail_insert(curr_node->children, ll_remove_first_data(curr_node->next->children));
 
-		printf("debug : Borrowed the min key = %lu from the right sibling\n",
+		printf("debug : borrowed the min key = %lu from the right sibling\n",
 		       (uintptr_t) borrowed_key);
 
-		/* Update parent's index */
+		/* Update the parent's index */
 		bpt_replace_index(t, curr_node, true);
 	    }
 	}
 
 	/*
 	 * The number of current node's keys is smaller than the min key.
-	 * Plus, failed to find available key from both nodes.
+	 * In addition, failed to find available key from both nodes.
 	 */
 	if (borrowed_from_left == false && borrowed_from_right == false){
 
