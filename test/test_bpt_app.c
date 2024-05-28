@@ -544,8 +544,10 @@ remove_from_two_depth_tree(void){
     bpt_tree *tree;
     bpt_node *last_node;
     uintptr_t i,
-	answers1[] = { 1, 2, 5, 6 },
-	answers2[] = { 1, 5, 6 },
+	leaves0[] = { 1, 2, 3, 4, 5, 6 },
+	leaves1[] = { 1, 2, 5, 6 },
+	leaves2[] = { 1, 5, 6 },
+	leaves3[] = { 1, 6 },
 	indexes1[] = { 2, 5 },
 	indexes2[] = { 5, 6 };
 
@@ -563,28 +565,33 @@ remove_from_two_depth_tree(void){
     /* Is the tree same as the expectation ? */
     assert(ll_get_length(tree->root->keys) == 2);
 
-    /* Basic check */
+    /* Basic check of the left child */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    assert(ll_get_length(last_node->keys) == 2); /* the left child */
+    assert(ll_get_length(last_node->keys) == 2);
+    keys_comparison_test(last_node, leaves0);
+
+    /* The middle child */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 3, &last_node) == true);
-    assert(ll_get_length(last_node->keys) == 2); /* the middle child */
+    assert(ll_get_length(last_node->keys) == 2);
+
+    /* The right child */
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 5, &last_node) == true);
-    assert(ll_get_length(last_node->keys) == 2); /* the right child */
+    assert(ll_get_length(last_node->keys) == 2);
 
     /* Removal of one key from the middle child */
     last_node = NULL;
-    bpt_delete(tree, (void *) 4);
+    assert(bpt_delete(tree, (void *) 4) == true);
     assert(bpt_search(tree->root, (void *) 3, &last_node) == true);
     assert(ll_get_length(last_node->keys) == 1);
 
     /* Removal to trigger borrowing from left child */
     last_node = NULL;
-    bpt_delete(tree, (void *) 3);
+    assert(bpt_delete(tree, (void *) 3) == true);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    keys_comparison_test(last_node, answers1);
+    keys_comparison_test(last_node, leaves1);
 
     /*
      * Before we go forward, check the current values of indexes.
@@ -596,11 +603,13 @@ remove_from_two_depth_tree(void){
      * Another Removal. Many things happen by this removal.
      *
      * (1) Borrow one key from the right child.
+     *
      * (2) With the 1st step, update the index for the right node.
      *     This maintains the tree's key and children relationship among
      *     the middle node and the right node and parent node's key.
      *     The index key = 5 must be replaced by 6, the minimum value
      *     of the right child.
+     *
      * (3) Remove the other 2 in the index because it's the removed key.
      *     The recursive call of bpt_delete_internal() handles this. Then,
      *     one of the index was removed, so fetch the minimum value of
@@ -609,13 +618,27 @@ remove_from_two_depth_tree(void){
      * After all, the indexes should contain '5' and '6'.
      */
     last_node = NULL;
-    bpt_delete(tree, (void *) 2);
+    assert(bpt_delete(tree, (void *) 2) == true);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    keys_comparison_test(last_node, answers2);
+    keys_comparison_test(last_node, leaves2);
 
     /* Check the index updates */
     assert(ll_get_length(last_node->parent->keys) == 2);
     keys_comparison_test(last_node->parent, indexes2);
+
+    /* Confirm that the remaining index key is only 6 after 5 removal */
+    last_node = NULL;
+    assert(bpt_delete(tree, (void *) 5) == true);
+    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+    assert(ll_get_length(last_node->parent->keys) == 1);
+    assert(last_node->parent->keys->head->data == (void *) 6);
+
+    /* and that leaves must have only 1 and 6 */
+    keys_comparison_test(last_node, leaves3);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+    assert(bpt_search(tree->root, (void *) 6, &last_node) == true);
 }
 
 static void

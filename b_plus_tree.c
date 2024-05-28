@@ -356,9 +356,7 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 
     ll_begin_iter(keys);
     for (iter = 0; iter < ll_get_length(keys); iter++){
-	/* We might hit NULL during key iteration. Skip NULL. */
-	if ((existing_key = ll_get_iter_data(keys)) == NULL)
-	    continue;
+	existing_key = ll_get_iter_data(keys);
 
 	diff = keys->key_compare_cb(keys->key_access_cb(existing_key),
 				    keys->key_access_cb(new_key));
@@ -424,7 +422,7 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
 	key_iter = ll_get_iter_data(node->keys);
 	child_iter = ll_get_iter_data(node->children);
 
-	if (key_iter == key)
+	if (node->keys->key_compare_cb(key_iter, key) == 0)
 	    break;
     }
     /* The right child for the key is the next pointer */
@@ -442,16 +440,16 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
  */
 static void
 bpt_merge_nodes(bpt_node *curr_node, bool with_right){
-    linked_list *merged_keys;
-    linked_list *merged_children;
+    linked_list *merged_keys, *merged_children;
     bpt_node *curr_child, *removed_child = NULL;
     node *node;
+    void *deleted_key;
     int index = 0;
 
-    printf("debug : bpt_merge_nodes() with %s...\n", with_right ? "right" : "left");
+    printf("debug : bpt_merge_nodes() with %s node\n", with_right ? "right" : "left");
 
     if (with_right){
-	/* Merging keys */
+	/* Merge keys */
 	merged_keys = ll_merge(curr_node->keys, curr_node->next->keys);
 
 	/* Merge children of current node with the ones of the next node */
@@ -461,7 +459,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	merged_children = curr_node->children;
 	node = curr_node->parent->children->head;
     }else{
-	/* Merging keys */
+	/* Merge keys */
 	merged_keys = ll_merge(curr_node->prev->keys, curr_node->keys);
 
 	/* Merge children of the prev node and ones of curr_node */
@@ -473,8 +471,8 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     }
 
     /*
-     * Now 'node' points to the merged children. Search for the
-     * removed child.
+     * Now 'node' points to the merged children. Search for the removed child
+     * and get the index of the child to pass as an argument of ll_index_remove().
      */
     while(true){
 	curr_child = (bpt_node *) node->data;
@@ -501,10 +499,15 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	index++;
     }
 
-    printf("%lu was removed at index = %d at %s node\n",
-	   (uintptr_t) ll_index_remove(curr_node->parent->keys, index), index,
-	   curr_node->parent->is_root ? "root" : "non-root");
+    /* Remove a key which became unnecessary by merge */
+    assert((deleted_key = ll_index_remove(curr_node->parent->keys, index)) != NULL);
+    /* Detach the removed child from the parent children as well. */
+    assert(ll_index_remove(curr_node->parent->children, index + 1) != NULL);
 
+    printf("%lu was removed at index = %d at %s node\n",
+	   (uintptr_t) deleted_key, index, curr_node->parent->is_root ? "root" : "non-root");
+
+    /* Reconnect all the merged results */
     if (with_right){
 	curr_node->keys = merged_keys;
 	curr_node->children = merged_children;
@@ -513,9 +516,16 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	curr_node->prev->children = merged_children;
     }
 
-    /* The removed child should be empty */
+    /* The removed child must be empty */
     assert(ll_get_length(removed_child->keys) == 0);
     assert(ll_get_length(removed_child->children) == 0);
+    /* The parent must delete the pointer to the removed child */
+    ll_begin_iter(curr_node->parent->children);
+    while((curr_child = ll_get_iter_data(curr_node->parent->children)) != NULL){
+	if (curr_child == removed_child)
+	    assert(0);
+    }
+    ll_end_iter(curr_node->parent->children);
 }
 
 static void
@@ -620,6 +630,10 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    if (curr_node->parent)
 		bpt_delete_internal(t, curr_node->parent, removed_key);
 
+	    /*
+	     * Here, we're done with updating all upper nodes by recursive calls.
+	     * Just return.
+	     */
 	    return;
 	}
 	curr_node->n_keys--;
@@ -676,9 +690,13 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    printf("debug : both sides of nodes weren't available to borrow a key\n");
 
 	    if (has_left_sibling){
-		bpt_merge_nodes(curr_node, true);
-	    }else if (has_right_sibling){
 		bpt_merge_nodes(curr_node, false);
+	    }else if (has_right_sibling){
+		bpt_merge_nodes(curr_node, true);
+		/*
+		 * Note : Don't touch the empty curr_node from here.
+		 * It's already merged with the previous node.
+		 */
 	    }else{
 		/*
 		 * Well, we didn't have any available siblings.
