@@ -435,8 +435,13 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
 }
 
 /*
- * Don't expect children can perform key_access_cb and
- * key_compare_cb.
+ * Don't expect children can perform 'key_access_cb' and
+ * 'key_compare_cb'. So, merging children uses some basic
+ * APIs for linked list such as ll_tail_insert() or
+ * ll_remove_first_data().
+ *
+ * Update the curr_node's parent's 'keys' and 'children'
+ * according to the merge.
  */
 static void
 bpt_merge_nodes(bpt_node *curr_node, bool with_right){
@@ -627,10 +632,16 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    /* Any leaf node must succeed in finding the removed key */
 	    assert(curr_node->is_leaf != true);
 
-	    if (curr_node->parent)
-		bpt_delete_internal(t, curr_node->parent, removed_key);
-
-	    return;
+	    /*
+	     * There is a need to borrow a key from siblings, even if
+	     * the key is not found.
+	     *
+	     * It's possible that there can be little (or no) key at this point
+	     * of time, because of the previous call of bpt_delete_internal()
+	     * and its merge that deletes one unnecessary key in between.
+	     *
+	     * Joins the code path to borrow a key from sibling.
+	     */
 	}else{
 	    if (!curr_node->is_leaf){
 		/* Updating index copies the reference of the right child's minimum key */
