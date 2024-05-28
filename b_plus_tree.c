@@ -530,38 +530,39 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 
 static void
 bpt_replace_index(bpt_tree *t, bpt_node *curr_node, bool from_right){
-    void *replaced_index, *min_key;
-    void *prev, *child;
+    void *prev_index, *replaced_index;
+    void *child;
+    void *min_key;
     bpt_node *right_child;
 
     /*
      * Iterate key and child simultaneously.
      *
-     * When we find the pointer of curr_node, we can tell which
+     * When we find the pointer of 'curr_node', we can tell which
      * key to remove in the parent's node.
      */
     ll_begin_iter(curr_node->parent->keys);
     ll_begin_iter(curr_node->parent->children);
-    prev = replaced_index = ll_get_iter_data(curr_node->parent->keys);
+    prev_index = replaced_index = ll_get_iter_data(curr_node->parent->keys);
     child = ll_get_iter_data(curr_node->parent->children);
     while(true){
 	if (from_right && child == curr_node){
 	    /*
 	     * If we borrow from the right child, then the
-	     * current key 'replaced_index' should be removed.
+	     * current 'replaced_index' should be removed.
 	     */
 	    right_child = ll_get_iter_data(curr_node->parent->children);
 	    break;
 	}else if (!from_right && child == curr_node){
 	    /*
 	     * If we borrow from the left child, then the
-	     * previous key 'prev' should be removed.
+	     * previous key, 'prev_index' should be removed.
 	     */
-	    replaced_index = prev;
+	    replaced_index = prev_index;
 	    right_child = child;
 	    break;
 	}
-	prev = replaced_index;
+	prev_index = replaced_index;
 	replaced_index = ll_get_iter_data(curr_node->parent->keys);
 	child = ll_get_iter_data(curr_node->parent->children);
     }
