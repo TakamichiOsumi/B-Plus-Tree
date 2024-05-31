@@ -591,6 +591,26 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 
     min_key = (t->m % 2 == 0) ? (t->m % 2 - 1) : (t->m % 2);
 
+    /* Need a node promotion ? */
+    if (curr_node->is_root && ll_get_length(curr_node->children) == 1){
+	bpt_node *child;
+
+	assert(curr_node->prev == NULL);
+	assert(curr_node->next == NULL);
+
+	child = ll_remove_first_data(curr_node->children);
+	child->is_root = true;
+	child->parent = NULL;
+	t->root = child;
+
+	ll_destroy(curr_node->keys);
+	ll_destroy(curr_node->children);
+
+	free(curr_node);
+
+	return;
+    }
+
     if (ll_get_length(curr_node->keys) - 1 >= min_key){
 
 	printf("debug : Delete one of sufficient keys = %lu\n", (uintptr_t) removed_key);

@@ -1,5 +1,6 @@
 # Development
 G*
+*.patch
 
 # Executables
 run_*

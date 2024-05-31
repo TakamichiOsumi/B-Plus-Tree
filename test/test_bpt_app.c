@@ -542,7 +542,7 @@ remove_from_one_root(void){
 static void
 remove_from_two_depth_tree(void){
     bpt_tree *tree;
-    bpt_node *last_node;
+    bpt_node *last_node, *last_node2;
     uintptr_t i,
 	leaves0[] = { 1, 2, 3, 4, 5, 6 },
 	leaves1[] = { 1, 2, 5, 6 },
@@ -636,9 +636,17 @@ remove_from_two_depth_tree(void){
     /* and that leaves must have only 1 and 6 */
     keys_comparison_test(last_node, leaves3);
 
-    last_node = NULL;
+    /* Ensure the two nodes are different but share the same parent */
+    last_node = last_node2 = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    assert(bpt_search(tree->root, (void *) 6, &last_node) == true);
+    assert(bpt_search(tree->root, (void *) 6, &last_node2) == true);
+    assert(last_node->parent == last_node2->parent);
+
+    /* Remove the value to trigger promotion */
+    last_node = NULL;
+    assert(bpt_delete(tree, (void *) 6) == true);
+    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+    assert(last_node->is_root == true);
 }
 
 static void
