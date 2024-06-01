@@ -623,9 +623,9 @@ bpt_replace_index(bpt_tree *t, bpt_node *curr_node, bool from_right){
 
 static void
 bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
-    int min_key;
+    int min_key_num;
 
-    min_key = (t->m % 2 == 0) ? (t->m % 2 - 1) : (t->m % 2);
+    min_key_num = (t->m % 2 == 0) ? (t->m % 2 - 1) : (t->m % 2);
 
     /* Need a node promotion ? */
     if (curr_node->is_root && ll_get_length(curr_node->children) == 1){
@@ -647,10 +647,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	return;
     }
 
-    if (ll_get_length(curr_node->keys) - 1 >= min_key){
-
-	printf("debug : Delete one of sufficient keys = %lu\n", (uintptr_t) removed_key);
-
+    if (ll_get_length(curr_node->keys) - 1 >= min_key_num){
 	if (curr_node->is_leaf){
 	    /*
 	     * bpt_search() before the first bpt_delete_internal() already proves
@@ -712,15 +709,12 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    }
 	}
 
-	printf("debug : delete one of insufficient key = %lu from leaf node\n",
-	       (uintptr_t) removed_key);
-
 	/* Is the left node an available sibling to borrow a key ? */
 	if (HAVE_SAME_PARENT(curr_node, curr_node->prev)){
+	    assert(curr_node->parent != NULL);
 
 	    has_left_sibling = true;
-
-	    if (ll_get_length(curr_node->prev->keys) - 1 >= min_key){
+	    if (ll_get_length(curr_node->prev->keys) - 1 >= min_key_num){
 		borrowed_from_left = true;
 
 		borrowed_key = ll_tail_remove(curr_node->prev->keys);
@@ -730,17 +724,17 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 		printf("debug : borrowed the max key = %lu from the left sibling\n",
 		       (uintptr_t) borrowed_key);
 
-		/* Update the parent's index if it exists */
+		/* Update the parent's index */
 		bpt_replace_index(t, curr_node, false);
 	    }
 	}
 
 	/* The left node wasn't available. How about the right sibling ? */
 	if (!borrowed_from_left && HAVE_SAME_PARENT(curr_node, curr_node->next)){
+	    assert(curr_node->parent != NULL);
 
 	    has_right_sibling = true;
-
-	    if (ll_get_length(curr_node->next->keys) - 1 >= min_key){
+	    if (ll_get_length(curr_node->next->keys) - 1 >= min_key_num){
 		borrowed_from_right = true;
 
 		borrowed_key = ll_remove_first_data(curr_node->next->keys);
@@ -755,25 +749,21 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    }
 	}
 
-	/*
-	 * The number of current node's keys is smaller than the min key.
-	 * In addition, failed to find available key from both nodes.
-	 */
 	if (borrowed_from_left == false && borrowed_from_right == false){
 
 	    /* Merge nodes if possible */
 	    printf("debug : both sides of nodes weren't available to borrow a key\n");
 
 	    if (has_left_sibling){
+		printf("debug : merged with the left node\n");
 		bpt_merge_nodes(curr_node, false);
 		/*
 		 * Note : Don't interact with the curr_node's 'keys'
 		 * and 'children' from here. It's already merged with
-		 * the previous node.
-		 *
-		 * Other attributes are fine.
+		 * the previous node, while other attributes are fine.
 		 */
 	    }else if (has_right_sibling){
+		printf("debug : merged with the right node\n");
 		bpt_merge_nodes(curr_node, true);
 	    }else{
 		/*
@@ -783,6 +773,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 		 */
 		assert(curr_node->is_root == true);
 		ll_remove_by_key(curr_node->keys, removed_key);
+		printf("debug : removed the current node's key only\n");
 	    }
 	}
 

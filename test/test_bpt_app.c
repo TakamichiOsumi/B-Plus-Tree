@@ -717,6 +717,10 @@ remove_from_three_depth_tree(){
     one_node_keys_comparison_test(last_node->next->next->next->parent, answers2);
     printf("debug : check the leaf nodes\n");
     full_keys_comparison_test(last_node, insertion);
+
+    /* Start the tests of bpt_remove() */
+    assert(bpt_delete(tree, (void *) 28) == true);
+    assert(bpt_delete(tree, (void *) 25) == true);
 }
 
 static void
