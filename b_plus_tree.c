@@ -661,10 +661,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    curr_node->n_keys--;
 	    /* TODO : Remove the record as well */
 	}else{
-	    /*
-	     * This internal node might or might not have the key.
-	     * If it has the key, remove and update the index.
-	     */
+	    /* This internal node might or might not have the key */
 	    if (ll_has_key(curr_node->keys, removed_key)){
 		/* Replace the index with the right child's minimum key */
 		void *key;
@@ -688,12 +685,14 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	    has_right_sibling = false, borrowed_from_right = false;
 	void *borrowed_key;
 
-	/* This node may not have the removed key */
-	if (ll_has_key(curr_node->keys, removed_key) == true){
-	    if (curr_node->is_leaf){
-		assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
-		curr_node->n_keys--;
-	    }else{
+	if (curr_node->is_leaf){
+	    /* This leaf node must contain the removed key */
+	    assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
+	    curr_node->n_keys--;
+	    /* TODO : Remove the record as well */
+	}else{
+	    /* This internal node may not have the removed key */
+	    if (ll_has_key(curr_node->keys, removed_key) == true){
 		/* Replace the index with right child's minimum key */
 		void *key;
 		bpt_node *right_child;
