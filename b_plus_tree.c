@@ -575,7 +575,7 @@ static void
 bpt_replace_index(bpt_tree *t, bpt_node *curr_node, bool from_right){
     void *prev_index, *replaced_index;
     void *child;
-    void *min_key;
+    void *key;
     bpt_node *right_child;
 
     /*
@@ -614,11 +614,11 @@ bpt_replace_index(bpt_tree *t, bpt_node *curr_node, bool from_right){
 
     assert(ll_remove_by_key(curr_node->parent->keys, replaced_index) != NULL);
     curr_node->parent->n_keys--;
-    assert((min_key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
-    ll_asc_insert(curr_node->parent->keys, min_key);
+    assert((key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
+    ll_asc_insert(curr_node->parent->keys, key);
 
     printf("debug : index key = %lu was replace with %lu\n",
-	   (uintptr_t) replaced_index, (uintptr_t) min_key);
+	   (uintptr_t) replaced_index, (uintptr_t) key);
 }
 
 static void
