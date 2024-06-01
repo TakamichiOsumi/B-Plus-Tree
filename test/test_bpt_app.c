@@ -71,18 +71,38 @@ leaf_keys_comparison_test(linked_list *keys, uintptr_t answers[]){
     ll_end_iter(keys);
 }
 
+/* Check only one node */
 static void
-keys_comparison_test(bpt_node *node, uintptr_t answers[]){
+one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
+    int i = 0;
+    void *p;
+
+    ll_begin_iter(node->keys);
+    while ((p = ll_get_iter_data(node->keys)) != NULL){
+	if ((uintptr_t) p != answers[i]){
+	    printf("the expected value is not same as leaf node value. %lu vs. %lu\n",
+		   (uintptr_t) p, answers[i]);
+	    assert(0);
+	}else{
+	    printf("found %lu expectedly\n", answers[i]);
+	}
+	i++;
+    }
+    ll_end_iter(node->keys);
+}
+
+/* Check the full nodes at the same level */
+static void
+full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     int i = 0;
     void *p;
 
     assert(node != NULL);
 
     while(true){
-
 	/* Check each key at the same level of node */
 	ll_begin_iter(node->keys);
-	while((p = ll_get_iter_data(node->keys)) != NULL){
+	while((p = (void *) ll_get_iter_data(node->keys)) != NULL){
 	    if ((uintptr_t) p != answers[i]){
 		printf("the expected value is not same as leaf node value. %lu vs. %lu\n",
 		       (uintptr_t) p, answers[i]);
@@ -417,7 +437,7 @@ insert_and_create_three_depth_tree(void){
     assert(bpt_search(tree->root, (void *) 4, &last_node) == true);
 
     /* Check the order of leaf node values */
-    keys_comparison_test(last_node, sorted_output);
+    full_keys_comparison_test(last_node, sorted_output);
 
     /* Search failure */
     last_node = NULL;
@@ -470,7 +490,7 @@ test_even_number_m(void){
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
 
     /* Iterate all the registered keys */
-    keys_comparison_test(last_node, answers);
+    full_keys_comparison_test(last_node, answers);
 
     /* All search should be successful */
     for (answer = 1; answer <= 20; answer++){
@@ -569,7 +589,7 @@ remove_from_two_depth_tree(void){
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
     assert(ll_get_length(last_node->keys) == 2);
-    keys_comparison_test(last_node, leaves0);
+    full_keys_comparison_test(last_node, leaves0);
 
     /* The middle child */
     last_node = NULL;
@@ -591,13 +611,13 @@ remove_from_two_depth_tree(void){
     last_node = NULL;
     assert(bpt_delete(tree, (void *) 3) == true);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    keys_comparison_test(last_node, leaves1);
+    full_keys_comparison_test(last_node, leaves1);
 
     /*
      * Before we go forward, check the current values of indexes.
      * Prove that we have '2' and '5' in the root node expectedly.
      */
-    keys_comparison_test(last_node->parent, indexes1);
+    full_keys_comparison_test(last_node->parent, indexes1);
 
     /*
      * Another Removal. Many things happen by this removal.
@@ -620,11 +640,11 @@ remove_from_two_depth_tree(void){
     last_node = NULL;
     assert(bpt_delete(tree, (void *) 2) == true);
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
-    keys_comparison_test(last_node, leaves2);
+    full_keys_comparison_test(last_node, leaves2);
 
     /* Check the index updates */
     assert(ll_get_length(last_node->parent->keys) == 2);
-    keys_comparison_test(last_node->parent, indexes2);
+    full_keys_comparison_test(last_node->parent, indexes2);
 
     /* Confirm that the remaining index key is only 6 after 5 removal */
     last_node = NULL;
@@ -634,7 +654,7 @@ remove_from_two_depth_tree(void){
     assert(last_node->parent->keys->head->data == (void *) 6);
 
     /* and that leaves must have only 1 and 6 */
-    keys_comparison_test(last_node, leaves3);
+    full_keys_comparison_test(last_node, leaves3);
 
     /* Ensure the two nodes are different but share the same parent */
     last_node = last_node2 = NULL;
@@ -655,7 +675,9 @@ remove_from_three_depth_tree(){
     bpt_node *last_node;
     uintptr_t i,
 	insertion[] = { 1, 4, 7, 10, 17, 19,
-			20, 21, 25, 28, 31, 42 };
+			20, 21, 25, 28, 31, 42 },
+	answers1[] = { 7, 17 },
+	answers2[] = { 25, 31 };
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
 		    employee_free,
@@ -673,6 +695,21 @@ remove_from_three_depth_tree(){
 	assert(bpt_search(tree->root, (void *) insertion[i], &last_node) == true);
 	printf("debug : found %lu\n", insertion[i]);
     }
+
+    /* Does the whole tree match the expected structure ? */
+    assert(ll_get_length(tree->root->keys) == 1);
+    assert(ll_get_length(tree->root->children) == 2);
+
+    last_node = NULL;
+    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+    assert(ll_get_length(last_node->parent->keys) == 2);
+    assert(ll_get_length(last_node->next->next->next->parent->keys) == 2);
+    assert(last_node->parent != last_node->next->next->next->parent);
+
+    printf("debug : check the left internal node\n");
+    one_node_keys_comparison_test(last_node->parent, answers1);
+    printf("debug : check the left internal node\n");
+    one_node_keys_comparison_test(last_node->next->next->next->parent, answers2);
 }
 
 static void

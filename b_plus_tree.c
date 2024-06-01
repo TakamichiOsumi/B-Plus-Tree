@@ -324,8 +324,6 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 		    break;
 	    ll_end_iter(parent_children);
 
-	    /* bpt_dump_children_keys(curr_node); */
-
 	    printf("Recursive call of bpt_insert() with key = %lu\n",
 		   (uintptr_t) copied_up_key);
 
