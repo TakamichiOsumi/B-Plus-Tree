@@ -650,6 +650,32 @@ remove_from_two_depth_tree(void){
 }
 
 static void
+remove_from_three_depth_tree(){
+    bpt_tree *tree;
+    bpt_node *last_node;
+    uintptr_t i,
+	insertion[] = { 1, 4, 7, 10, 17, 19,
+			20, 21, 25, 28, 31, 42 };
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free, 3);
+
+    for (i = 0; i < 12; i++){
+	bpt_insert(tree, (void *) insertion[i], &e1);
+	printf("debug : done with insertion of %lu\n", insertion[i]);
+    }
+
+    for (i = 0; i < 12; i++){
+	last_node = NULL;
+	assert(bpt_search(tree->root, (void *) insertion[i], &last_node) == true);
+	printf("debug : found %lu\n", insertion[i]);
+    }
+}
+
+static void
 test_bpt_search(void){
     printf("<search key test from single node>\n");
     search_single_node_test();
@@ -680,6 +706,9 @@ test_bpt_remove(void){
 
     printf("<remove key from depth 2 tree>\n");
     remove_from_two_depth_tree();
+
+    printf("<remove key from depth 3 tree>\n");
+    remove_from_three_depth_tree();
 }
 
 int

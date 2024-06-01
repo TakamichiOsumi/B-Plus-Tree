@@ -32,6 +32,27 @@ bpt_dump_list(linked_list *list){
     ll_end_iter(list);
 }
 
+static void
+bpt_dump_children_keys(bpt_node *curr_node){
+    bpt_node *child;
+    void *key;
+
+    if (!curr_node->parent)
+	return;
+
+    ll_begin_iter(curr_node->parent->children);
+    while((child = (bpt_node *) ll_get_iter_data(curr_node->parent->children)) != NULL){
+	printf("\t\t [ ");
+	ll_begin_iter(child->keys);
+	while((key = ll_get_iter_data(child->keys)) != NULL){
+	    printf("%lu, ", (uintptr_t) key);
+	}
+	ll_end_iter(child->keys);
+	printf("]\n");
+    }
+    ll_end_iter(curr_node->parent->children);
+}
+
 /*
  * Return empty and nullified node
  *
@@ -205,7 +226,7 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	    ll_index_insert(curr_node->children, new_child, new_child_index);
 	}
     }else{
-	bpt_node *right_half;
+	bpt_node *right_half, *child;
 	void *copied_up_key = NULL;
 
 	printf("*split for %lu*\n", (uintptr_t) new_key);
@@ -249,8 +270,19 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	    /* Delete the copied up key and the corresponding child */
 	    (void) ll_remove_first_data(right_half->keys);
 	    assert((p = ll_remove_first_data(right_half->children)) == NULL);
-	    printf("Removed internal node's key = %lu. Left key num = %d\n",
+	    printf("debug : removed internal node's key = %lu. Left key num = %d\n",
 		   (uintptr_t) copied_up_key, ll_get_length(right_half->keys));
+
+	    /*
+	     * After split, all children still point to the left split node.
+	     * Then, update the parent member of all of the right half children.
+	     */
+	    ll_begin_iter(right_half->children);
+	    while((child = (bpt_node *) ll_get_iter_data(right_half->children)) != NULL){
+		child->parent = right_half;
+	    }
+	    ll_end_iter(right_half->children);
+	    printf("debug : changing parent of children after split\n");
 	}
 
 	if (!curr_node->parent){
@@ -273,6 +305,7 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 		   (uintptr_t) copied_up_key);
 	    ll_tail_insert(new_top->children, curr_node);
 	    ll_tail_insert(new_top->children, right_half);
+
 	}else{
 	    /*
 	     * Propagate the key insertion to the upper node. Notify the
@@ -291,8 +324,7 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 		    break;
 	    ll_end_iter(parent_children);
 
-	    /* We must find the target child */
-	    assert(index < ll_get_length(parent_children));
+	    /* bpt_dump_children_keys(curr_node); */
 
 	    printf("Recursive call of bpt_insert() with key = %lu\n",
 		   (uintptr_t) copied_up_key);
