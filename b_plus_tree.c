@@ -652,7 +652,12 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	printf("debug : Delete one of sufficient keys = %lu\n", (uintptr_t) removed_key);
 
 	if (curr_node->is_leaf){
-	    ll_remove_by_key(curr_node->keys, removed_key);
+	    /*
+	     * bpt_search() before the first bpt_delete_internal() already proves
+	     * the key exists. If this is a leaf node, it must contain the removed
+	     * key.
+	     */
+	    assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
 	    curr_node->n_keys--;
 	    /* TODO : Remove the record as well */
 	}else{
