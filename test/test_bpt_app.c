@@ -676,6 +676,7 @@ remove_from_three_depth_tree(){
     uintptr_t i,
 	insertion[] = { 1, 4, 7, 10, 17, 19,
 			20, 21, 25, 28, 31, 42 },
+	answers0[] = { 20 },
 	answers1[] = { 7, 17 },
 	answers2[] = { 25, 31 };
     tree = bpt_init(employee_key_access,
@@ -702,14 +703,20 @@ remove_from_three_depth_tree(){
 
     last_node = NULL;
     assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+
+    assert(last_node->parent->parent->is_root);
     assert(ll_get_length(last_node->parent->keys) == 2);
     assert(ll_get_length(last_node->next->next->next->parent->keys) == 2);
     assert(last_node->parent != last_node->next->next->next->parent);
 
+    printf("debug : check the root\n");
+    one_node_keys_comparison_test(last_node->parent->parent, answers0);
     printf("debug : check the left internal node\n");
     one_node_keys_comparison_test(last_node->parent, answers1);
     printf("debug : check the left internal node\n");
     one_node_keys_comparison_test(last_node->next->next->next->parent, answers2);
+    printf("debug : check the leaf nodes\n");
+    full_keys_comparison_test(last_node, insertion);
 }
 
 static void
