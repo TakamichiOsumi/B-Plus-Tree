@@ -103,7 +103,13 @@ bpt_init(bpt_key_access_cb keys_key_access,
 
     if(m < 3){
 	fprintf(stderr,
-		"b+ tree's order needs to be larger than three\n");
+		"the number of b+ tree's children should be larger than three\n");
+	return NULL;
+    }
+
+    if (keys_key_access == NULL || keys_key_compare == NULL){
+	fprintf(stderr,
+		"NULL 'keys_key_access' or 'keys_key_compare' callback is invalid\n");
 	return NULL;
     }
 

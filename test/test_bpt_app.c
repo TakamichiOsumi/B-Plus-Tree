@@ -391,9 +391,8 @@ insert_and_create_two_depth_tree(void){
     assert(bpt_insert(tree, (void *) 6, &e6) == true);
 
     /* After the node split, are all nodes correctly connected ? */
-    left = NULL;
+    right = left = NULL;
     assert(bpt_search(tree->root, (void *) 1, &left) == true);
-    right = NULL;
     assert(bpt_search(tree->root, (void *) 5, &right) == true);
     assert(left->next == right);
     assert(left->parent == tree->root);
