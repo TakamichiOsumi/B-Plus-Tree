@@ -671,13 +671,17 @@ remove_from_two_depth_tree(void){
 static void
 remove_from_three_depth_tree(){
     bpt_tree *tree;
-    bpt_node *last_node;
+    bpt_node *node;
     uintptr_t i,
 	insertion[] = { 1, 4, 7, 10, 17, 19,
 			20, 21, 25, 28, 31, 42 },
 	answers0[] = { 20 },
 	answers1[] = { 7, 17 },
-	answers2[] = { 25, 31 };
+	answers2[] = { 25, 31 },
+	answers3[] = { 21, 31 },
+	answers4[] = { 31, 42 },
+	answers5[] = { 20, 42 };
+
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
 		    employee_free,
@@ -691,8 +695,8 @@ remove_from_three_depth_tree(){
     }
 
     for (i = 0; i < 12; i++){
-	last_node = NULL;
-	assert(bpt_search(tree->root, (void *) insertion[i], &last_node) == true);
+	node = NULL;
+	assert(bpt_search(tree->root, (void *) insertion[i], &node) == true);
 	printf("debug : found %lu\n", insertion[i]);
     }
 
@@ -700,26 +704,54 @@ remove_from_three_depth_tree(){
     assert(ll_get_length(tree->root->keys) == 1);
     assert(ll_get_length(tree->root->children) == 2);
 
-    last_node = NULL;
-    assert(bpt_search(tree->root, (void *) 1, &last_node) == true);
+    node = NULL;
+    assert(bpt_search(tree->root, (void *) 1, &node) == true);
 
-    assert(last_node->parent->parent->is_root);
-    assert(ll_get_length(last_node->parent->keys) == 2);
-    assert(ll_get_length(last_node->next->next->next->parent->keys) == 2);
-    assert(last_node->parent != last_node->next->next->next->parent);
+    assert(node->parent->parent->is_root);
+    assert(ll_get_length(node->parent->keys) == 2);
+    assert(ll_get_length(node->next->next->next->parent->keys) == 2);
+    assert(node->parent != node->next->next->next->parent);
 
     printf("debug : check the root\n");
-    one_node_keys_comparison_test(last_node->parent->parent, answers0);
-    printf("debug : check the left internal node\n");
-    one_node_keys_comparison_test(last_node->parent, answers1);
-    printf("debug : check the left internal node\n");
-    one_node_keys_comparison_test(last_node->next->next->next->parent, answers2);
-    printf("debug : check the leaf nodes\n");
-    full_keys_comparison_test(last_node, insertion);
+    one_node_keys_comparison_test(node->parent->parent, answers0);
 
-    /* Start the tests of bpt_remove() */
+    printf("debug : check the left internal node\n");
+    one_node_keys_comparison_test(node->parent, answers1);
+
+    printf("debug : check the left internal node\n");
+    one_node_keys_comparison_test(node->next->next->next->parent, answers2);
+
+    printf("debug : check the leaf nodes\n");
+    full_keys_comparison_test(node, insertion);
+
+    /* Start the tests of bpt_delete() */
     assert(bpt_delete(tree, (void *) 28) == true);
     assert(bpt_delete(tree, (void *) 25) == true);
+
+    /* Check the values of indexes */
+    assert(tree->root->keys->head->data == (void *) 20);
+    one_node_keys_comparison_test((bpt_node *) ll_ref_index_data(tree->root->children, 1),
+				  answers3);
+
+    /* Check the root's right child after '21' removal */
+    assert(bpt_delete(tree, (void *) 21) == true);
+    assert(tree->root->keys->head->data == (void *) 20);
+    node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
+    assert(ll_get_length(node->keys) == 2);
+    one_node_keys_comparison_test(node, answers4);
+
+    /* The internal node borrowing */
+    printf("debug : start the internal node borrowing\n");
+    assert(bpt_delete(tree, (void *) 31) == true);
+
+    /* Check the root key */
+    assert(ll_get_length(tree->root->keys) == 1);
+    assert(tree->root->keys->head->data == (void *) 17);
+
+    /* Check if other nodes have the expected keys */
+    node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
+    assert(ll_get_length(node->keys) == 2);
+    one_node_keys_comparison_test(node, answers5);
 }
 
 static void
