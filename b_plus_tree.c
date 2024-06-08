@@ -553,7 +553,6 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     assert(ll_index_remove(curr_node->parent->children, index + 1) != NULL);
 
     /* printf("*mark2*\n"); bpt_dump_list(curr_node->parent->keys); */
-
     printf("debug : %lu was removed at index = %d at %s parent node\n",
 	   (uintptr_t) deleted_key, index, curr_node->parent->is_root ? "root" : "non-root");
 

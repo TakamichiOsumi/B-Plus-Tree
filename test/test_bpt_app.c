@@ -680,7 +680,9 @@ remove_from_three_depth_tree(){
 	answers2[] = { 25, 31 },
 	answers3[] = { 21, 31 },
 	answers4[] = { 31, 42 },
-	answers5[] = { 20, 42 };
+	answers5[] = { 7 },
+	answers6[] = { 20, 42 },
+	answers7[] = { 1, 4, 7, 10, 17, 19, 20, 42 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -749,9 +751,22 @@ remove_from_three_depth_tree(){
     assert(tree->root->keys->head->data == (void *) 17);
 
     /* Check if other nodes have the expected keys */
-    node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
-    assert(ll_get_length(node->keys) == 2);
+    node = (bpt_node *) ll_ref_index_data(tree->root->children, 0); /* left child */
+    assert(ll_get_length(node->keys) == 1);
     one_node_keys_comparison_test(node, answers5);
+
+    node = (bpt_node *) ll_ref_index_data(tree->root->children, 1); /* right child */
+    assert(ll_get_length(node->keys) == 2);
+    one_node_keys_comparison_test(node, answers6);
+
+    /* Check the full leaf nodes */
+    assert(bpt_search(tree->root, (void *) 1, &node));
+    full_keys_comparison_test(node, answers7);
+    for (i = 0; i < 8; i++){
+	node = NULL;
+	assert(bpt_search(tree->root, (void *) answers7[i], &node) == true);
+	assert(node != NULL);
+    }
 }
 
 static void
