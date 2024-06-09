@@ -78,16 +78,16 @@ bpt_gen_node(void){
  * Yet, both lists are returned as empty.
  */
 bpt_node *
-bpt_gen_root_callbacks_node(bpt_tree *t){
+bpt_gen_root_callbacks_node(bpt_tree *bpt){
     bpt_node *n;
 
     n = bpt_gen_node();
-    n->keys = ll_init(t->root->keys->key_access_cb,
-		      t->root->keys->key_compare_cb,
-		      t->root->keys->free_cb);
-    n->children = ll_init(t->root->children->key_access_cb,
-			  t->root->children->key_compare_cb,
-			  t->root->children->free_cb);
+    n->keys = ll_init(bpt->root->keys->key_access_cb,
+		      bpt->root->keys->key_compare_cb,
+		      bpt->root->keys->free_cb);
+    n->children = ll_init(bpt->root->children->key_access_cb,
+			  bpt->root->children->key_compare_cb,
+			  bpt->root->children->free_cb);
 
     return n;
 }
@@ -98,12 +98,12 @@ bpt_init(bpt_key_access_cb keys_key_access,
 	 bpt_free_cb keys_key_free,
 	 bpt_key_access_cb children_key_access,
 	 bpt_key_compare_cb children_key_compare,
-	 bpt_free_cb children_key_free, uint16_t m){
+	 bpt_free_cb children_key_free, uint16_t max_children){
     bpt_tree *tree;
 
-    if(m < 3){
+    if(max_children < 3){
 	fprintf(stderr,
-		"the number of b+ tree's children should be larger than three\n");
+		"the number of max children should be larger than three\n");
 	return NULL;
     }
 
@@ -114,7 +114,7 @@ bpt_init(bpt_key_access_cb keys_key_access,
     }
 
     tree = (bpt_tree *) bpt_malloc(sizeof(bpt_tree));
-    tree->m = m;
+    tree->max_children = max_children;
 
     /* Set up the initial empty node with empty lists */
     tree->root = bpt_gen_node();
@@ -139,10 +139,10 @@ bpt_init(bpt_key_access_cb keys_key_access,
  * existing nodes before and after the two split nodes.
  */
 static bpt_node *
-bpt_node_split(bpt_tree *t, bpt_node *curr_node){
+bpt_node_split(bpt_tree *bpt, bpt_node *curr_node){
     bpt_node *half;
     linked_list *left_keys, *left_children;
-    int node_num = (t->m % 2 == 0) ? (t->m / 2) : (t->m / 2) + 1;
+    int node_num = (bpt->max_children % 2 == 0) ? (bpt->max_children / 2) : (bpt->max_children / 2) + 1;
 
     /* Create an empty node whose 'keys' and 'children' are null */
     half = bpt_gen_node();
@@ -208,14 +208,14 @@ bpt_get_copied_up_key(linked_list *keys){
  * at aligned index position.
  */
 static void
-bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
+bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 		    void *new_value, int new_child_index, void *new_child){
-    assert(t != NULL);
+    assert(bpt != NULL);
     assert(curr_node != NULL);
     assert(new_key != NULL);
 
     /* Does this node have room to store a new key ? */
-    if (ll_get_length(curr_node->keys) < t->m){
+    if (ll_get_length(curr_node->keys) < bpt->max_children){
 	curr_node->n_keys++;
 
 	if (curr_node->is_leaf){
@@ -244,7 +244,7 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	    ll_index_insert(curr_node->children, new_child, new_child_index);
 
 	/* Split keys and children */
-	right_half = bpt_node_split(t, curr_node);
+	right_half = bpt_node_split(bpt, curr_node);
 
 	printf("debug : left (%d len : %p) => \n", ll_get_length(curr_node->keys), curr_node);
 	bpt_dump_list(curr_node->keys);
@@ -302,10 +302,10 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	    assert(right_half->is_root == true);
 	    assert(right_half->parent == NULL);
 
-	    new_top = bpt_gen_root_callbacks_node(t);
+	    new_top = bpt_gen_root_callbacks_node(bpt);
 	    new_top->is_root = true;
 	    new_top->is_leaf = curr_node->is_root = right_half->is_root = false;
-	    curr_node->parent = right_half->parent = t->root = new_top;
+	    curr_node->parent = right_half->parent = bpt->root = new_top;
 
 	    ll_asc_insert(new_top->keys, copied_up_key);
 
@@ -336,24 +336,24 @@ bpt_insert_internal(bpt_tree *t, bpt_node *curr_node, void *new_key,
 	    printf("Recursive call of bpt_insert() with key = %lu\n",
 		   (uintptr_t) copied_up_key);
 
-	    bpt_insert_internal(t, curr_node->parent,
+	    bpt_insert_internal(bpt, curr_node->parent,
 				copied_up_key, NULL, index + 1, right_half);
 	}
     }
 }
 
 bool
-bpt_insert(bpt_tree *t, void *new_key, void *new_data){
+bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){
     bpt_node *last_node;
     bool found_same_key = false;
 
-    found_same_key = bpt_search(t->root, new_key, &last_node);
+    found_same_key = bpt_search(bpt->root, new_key, &last_node);
 
     /* Prohibit duplicate keys */
     if (found_same_key)
 	return false;
     else{
-	bpt_insert_internal(t, last_node, new_key, new_data, 0, NULL);
+	bpt_insert_internal(bpt, last_node, new_key, new_data, 0, NULL);
 
 	return true;
     }
@@ -576,7 +576,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 }
 
 static void
-bpt_replace_index(bpt_tree *t, bpt_node *curr_node, bool from_right){
+bpt_replace_index(bpt_node *curr_node, bool from_right){
     void *prev_index, *replaced_index;
     void *child;
     void *key;
@@ -649,10 +649,10 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
 }
 
 static void
-bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
+bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
     int min_key_num;
 
-    min_key_num = (t->m % 2 == 0) ? (t->m % 2 - 1) : (t->m % 2);
+    min_key_num = (bpt->max_children % 2 == 0) ? (bpt->max_children % 2 - 1) : (bpt->max_children % 2);
 
     printf("debug : bpt_delete_internal() for %p\n", curr_node);
 
@@ -666,7 +666,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 	child = ll_remove_first_data(curr_node->children);
 	child->is_root = true;
 	child->parent = NULL;
-	t->root = child;
+	bpt->root = child;
 
 	ll_destroy(curr_node->keys);
 	ll_destroy(curr_node->children);
@@ -710,7 +710,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 
 	/* Continue to update the indexes. Go up by recursive call */
 	if (!curr_node->is_root)
-	    bpt_delete_internal(t, curr_node->parent, removed_key);
+	    bpt_delete_internal(bpt, curr_node->parent, removed_key);
     }else{
 	bool has_left_sibling = false, borrowed_from_left = false,
 	    has_right_sibling = false, borrowed_from_right = false;
@@ -739,7 +739,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 		       (uintptr_t) removed_key, (uintptr_t) key);
 
 		if (curr_node->parent)
-		    bpt_delete_internal(t, curr_node->parent, removed_key);
+		    bpt_delete_internal(bpt, curr_node->parent, removed_key);
 
 		return;
 	    }
@@ -765,7 +765,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 			   (uintptr_t) borrowed_key);
 
 		    /* Update the parent's index */
-		    bpt_replace_index(t, curr_node, false);
+		    bpt_replace_index(curr_node, false);
 		}else{
 		    void *middle_key, *largest_key;
 		    bpt_node *borrowed_child;
@@ -815,7 +815,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 			   (uintptr_t) borrowed_key);
 
 		    /* Update the parent's index */
-		    bpt_replace_index(t, curr_node, true);
+		    bpt_replace_index(curr_node, true);
 		}else{
 		    void *middle_key, *smallest_key;
 		    bpt_node *borrowed_child;
@@ -857,7 +857,7 @@ bpt_delete_internal(bpt_tree *t, bpt_node *curr_node, void *removed_key){
 
 	/* Continue to update the indexes. Go up by recursive call */
 	if (!curr_node->is_root)
-	    bpt_delete_internal(t, curr_node->parent, removed_key);
+	    bpt_delete_internal(bpt, curr_node->parent, removed_key);
     }
 }
 
