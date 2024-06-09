@@ -676,15 +676,17 @@ remove_from_three_depth_tree(){
 	insertion[] = { 1, 4, 7, 10, 17, 19,
 			20, 21, 25, 28, 31, 42 },
 	answers0[] = { 20 },
-	answers1[] = {  7, 17 },
+	answers1[] = { 7, 17 },
 	answers2[] = { 25, 31 },
 	answers3[] = { 21, 31 },
 	answers4[] = { 31, 42 },
-	answers5[] = {  7 },
+	answers5[] = { 7 },
 	answers6[] = { 20, 42 },
 	answers7[] = { 1, 4, 7, 10, 17, 19, 20, 42 },
 	answers8[] = { 7, 17 },
-	answers9[] = { 1, 4, 7, 17, 19, 20 };
+	answers9[] = { 42 },
+	answers10[] = { 1, 4, 7, 17, 19, 20, 42 },
+	answers11[] = { 1, 4, 7, 17, 19, 20 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -783,18 +785,45 @@ remove_from_three_depth_tree(){
     /* The right child */
     node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
     assert(ll_get_length(node->keys) == 1);
+    one_node_keys_comparison_test(node, answers9);
 
     bpt_search(tree->root, (void *) 1, &node);
     assert(ll_get_length(node->parent->children) == 3);
 
-    /* This removal won't make new things happen */
+    for (i = 0; i < 7; i++){
+	node = NULL;
+	assert(bpt_search(tree->root, (void *) answers10[i], &node) == true);
+    }
+
+    /* Test the 'parent' attributes for debug */
+    node = NULL;
+    bpt_search(tree->root, (void *) 1, &node);
+    assert(node->parent == node->next->parent &&
+	   node->next->parent == node->next->next->parent);
+    assert(node->parent != node->next->next->next->parent);
+
+    node = NULL;
+    bpt_search(tree->root, (void *) 20, &node);
+    assert(node->parent == node->next->parent);
+
+    /* This removal makes the internal node borrowing happen again */
     bpt_delete(tree, (void *) 42);
     assert(ll_get_length(tree->root->keys) == 1);
+    assert(tree->root->keys->head->data == (void *) 17);
     assert(ll_get_length(tree->root->children) == 2);
+
+    node = (bpt_node *) ll_ref_index_data(tree->root->children, 0);
+    assert(ll_get_length(node->keys) == 1);
+    assert(node->keys->head->data == (void *) 7);
+
+    node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
+    assert(ll_get_length(node->keys) == 1);
+    assert(node->keys->head->data == (void *) 20);
+
     for (i = 0; i < 6; i++){
 	node = NULL;
-	assert(bpt_search(tree->root, (void *) answers9[i], &node) == true);
-	printf("found : %lu\n", (uintptr_t) answers9[i]);
+	assert(bpt_search(tree->root, (void *) answers11[i], &node) == true);
+	printf("found : %lu\n", (uintptr_t) answers11[i]);
     }
 }
 
