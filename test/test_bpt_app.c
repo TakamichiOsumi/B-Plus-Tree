@@ -683,7 +683,8 @@ remove_from_three_depth_tree(){
 	answers5[] = {  7 },
 	answers6[] = { 20, 42 },
 	answers7[] = { 1, 4, 7, 10, 17, 19, 20, 42 },
-	answers8[] = { 7, 17 };
+	answers8[] = { 7, 17 },
+	answers9[] = { 1, 4, 7, 17, 19, 20 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -785,6 +786,16 @@ remove_from_three_depth_tree(){
 
     bpt_search(tree->root, (void *) 1, &node);
     assert(ll_get_length(node->parent->children) == 3);
+
+    /* This removal won't make new things happen */
+    bpt_delete(tree, (void *) 42);
+    assert(ll_get_length(tree->root->keys) == 1);
+    assert(ll_get_length(tree->root->children) == 2);
+    for (i = 0; i < 6; i++){
+	node = NULL;
+	assert(bpt_search(tree->root, (void *) answers9[i], &node) == true);
+	printf("found : %lu\n", (uintptr_t) answers9[i]);
+    }
 }
 
 static void
