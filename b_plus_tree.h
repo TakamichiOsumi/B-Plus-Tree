@@ -86,10 +86,11 @@ bpt_tree *bpt_init(bpt_key_access_cb keys_key_access,
 		   bpt_free_cb keys_key_free,
 		   bpt_key_access_cb children_key_access,
 		   bpt_key_compare_cb children_key_compare,
-		   bpt_free_cb children_key_free, uint16_t max_children);
+		   bpt_free_cb children_key_free,
+		   uint16_t max_children);
 void bpt_dump_list(linked_list *list);
 bool bpt_insert(bpt_tree *bpt, void *key, void *data);
-bool bpt_search(bpt_node *curr_node, void *key,
+bool bpt_search(bpt_tree *bpt, void *key,
 		bpt_node **last_explored_node);
 bool bpt_delete(bpt_tree *bpt, void *key);
 void bpt_destroy(bpt_tree *bpt);

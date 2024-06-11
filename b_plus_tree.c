@@ -344,16 +344,16 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 
 bool
 bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){
-    bpt_node *last_node;
+    bpt_node *leaf_node;
     bool found_same_key = false;
 
-    found_same_key = bpt_search(bpt->root, new_key, &last_node);
+    found_same_key = bpt_search(bpt, new_key, &leaf_node);
 
     /* Prohibit duplicate keys */
     if (found_same_key)
 	return false;
     else{
-	bpt_insert_internal(bpt, last_node, new_key, new_data, 0, NULL);
+	bpt_insert_internal(bpt, leaf_node, new_key, new_data, 0, NULL);
 
 	return true;
     }
@@ -364,8 +364,8 @@ bpt_ref_index_child(bpt_node *curr_node, int index){
     return (bpt_node *) ll_ref_index_data(curr_node->children, index);
 }
 
-bool
-bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
+static bool
+bpt_search_internal(bpt_node *curr_node, void *new_key, bpt_node **leaf_node){
     linked_list *keys;
     void *existing_key;
     int iter, diff, children_index;
@@ -373,16 +373,8 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
     printf("debug : bpt_search() for key = %lu in node '%p'\n",
 	   (uintptr_t) new_key, curr_node);
 
-    /*
-     * If recursive call of bpt_search() receives NULL 'curr_node',
-     * it means node's children contained NULL value and we tried
-     * to search it. Return false.
-     */
-    if (curr_node == NULL)
-	return false;
-
     /* Set the last searched node. This search can be last */
-    *last_node = curr_node;
+    *leaf_node = curr_node;
 
     /*
      * Iterate each bpt's key and compare it with the new key.
@@ -412,8 +404,8 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 	    return true;
 	else{
 	    /* Search for the right child */
-	    return bpt_search(bpt_ref_index_child(curr_node, children_index + 1),
-			      new_key, last_node);
+	    return bpt_search_internal(bpt_ref_index_child(curr_node, children_index + 1),
+				       new_key, leaf_node);
 	}
     }else if (diff == 1){
 	/* Found larger key value than the 'new_key' */
@@ -421,8 +413,8 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 	    return false;
 	else{
 	    /* Search for the left child */
-	    return bpt_search(bpt_ref_index_child(curr_node, children_index),
-			      new_key, last_node);
+	    return bpt_search_internal(bpt_ref_index_child(curr_node, children_index),
+				       new_key, leaf_node);
 	}
     }else{
 	/* The key was bigger than all the existing keys */
@@ -430,11 +422,23 @@ bpt_search(bpt_node *curr_node, void *new_key, bpt_node **last_node){
 	    return false;
 	else{
 	    /* Search for the rightmost child */
-	    return bpt_search(bpt_ref_index_child(curr_node,
-						  ll_get_length(curr_node->children) - 1),
-			      new_key, last_node);
+	    return bpt_search_internal(bpt_ref_index_child(curr_node,
+							   ll_get_length(curr_node->children) - 1),
+				       new_key, leaf_node);
 	}
     }
+}
+
+/*
+ * Wrapper function of bpt_search_internal().
+ */
+bool
+bpt_search(bpt_tree *bpt, void* new_key, bpt_node **leaf_node){
+
+    if (bpt != NULL && bpt->root != NULL && new_key != NULL)
+	return bpt_search_internal(bpt->root, new_key, leaf_node);
+
+    return false;
 }
 
 /*
@@ -882,16 +886,16 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 bool
 bpt_delete(bpt_tree *bpt, void *key){
-    bpt_node *last_node;
+    bpt_node *leaf_node;
     bool found_same_key = false;
 
     printf("debug : bpt_delete() for root = %p\n", bpt->root);
 
-    found_same_key = bpt_search(bpt->root, key, &last_node);
+    found_same_key = bpt_search(bpt, key, &leaf_node);
 
     /* Remove the found key */
     if (found_same_key){
-	bpt_delete_internal(bpt, last_node, key);
+	bpt_delete_internal(bpt, leaf_node, key);
 
 	return true;
     }else{
