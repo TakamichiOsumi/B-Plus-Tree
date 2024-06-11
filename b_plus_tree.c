@@ -663,7 +663,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
     printf("debug : bpt_delete_internal() for %p\n", curr_node);
 
-    /* Need a node promotion ? */
+    /* Need a root promotion ? */
     if (curr_node->is_root && ll_get_length(curr_node->children) == 1){
 	bpt_node *child;
 
@@ -683,6 +683,58 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	printf("debug : completed root promotion\n");
 
 	return;
+    }
+
+    /* The other form of root promotion, which shrinks tree's height by merge */
+    if (!curr_node->is_root &&
+	ll_get_length(curr_node->keys) == 0 &&
+	ll_get_length(curr_node->children) == 1){
+	/*
+	 * The previous call of bpt_delete_internal() has merged the last two
+	 * children and deleted one left index in between. We must ensure that
+	 * we don't have any keys left in this node and that we have a parent
+	 * that stores key.
+	 */
+	assert(curr_node->parent != NULL);
+	assert(curr_node->parent->is_root == true);
+	assert(ll_get_length(curr_node->parent->keys) >= 1);
+
+	if (HAVE_SAME_PARENT(curr_node->prev, curr_node)){
+	    /*
+	     * Move all necessary parent's keys and the current node's children
+	     * to the previous node.
+	     */
+	    while(ll_get_length(curr_node->parent->keys) > 0)
+		ll_asc_insert(curr_node->prev->keys,
+			      ll_remove_first_data(curr_node->parent->keys));
+	    while(ll_get_length(curr_node->children) > 0)
+		ll_tail_insert(curr_node->prev->children,
+			       ll_remove_first_data(curr_node->children));
+
+	    /* Reconnect nodes. The previous node becomes the new root */
+	    bpt->root = curr_node->prev;
+	    curr_node->prev->next = NULL;
+	    curr_node->prev->parent = NULL;
+
+	    /* Free the current root and the current node */
+	    ll_destroy(curr_node->parent->keys);
+	    ll_destroy(curr_node->parent->children);
+	    free(curr_node->parent);
+
+	    curr_node->prev = NULL;
+	    curr_node->parent = NULL;
+	    ll_destroy(curr_node->keys);
+	    ll_destroy(curr_node->children);
+	    free(curr_node);
+
+	    /* Done with the key deletion */
+	    return;
+	}
+
+	if (HAVE_SAME_PARENT(curr_node, curr_node->next)){
+	    /* Move all necessary data to the next node */
+	    return;
+	}
     }
 
     printf("debug : current node = %s, number of keys = %d, number of children = %d\n",
@@ -861,7 +913,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 	if (borrowed_from_left == false && borrowed_from_right == false){
 	    /* Merge nodes if possible */
-	    printf("debug : both sides of nodes weren't available to borrow a key\n");
+	    printf("debug : borrowing a key didn't happen\n");
 	    if (has_left_sibling){
 		bpt_merge_nodes(curr_node, false);
 		printf("debug : merged with the left node\n");
@@ -874,7 +926,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		bpt_merge_nodes(curr_node, true);
 		printf("debug : merged with the right node\n");
 	    }else{
-		printf("*neither borrowing nor merge*\n");
+		printf("debug : merging nodes didn't happen\n");
 	    }
 	}
 

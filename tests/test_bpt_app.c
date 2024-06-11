@@ -65,7 +65,7 @@ leaf_keys_comparison_test(linked_list *keys, uintptr_t answers[]){
 		   (uintptr_t) p, answers[i]);
 	    exit(-1);
 	}else{
-	    printf("found %lu expectedly\n", answers[i]);
+	    printf("debug : found %lu expectedly\n", answers[i]);
 	}
     }
     ll_end_iter(keys);
@@ -84,7 +84,7 @@ one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 		   (uintptr_t) p, answers[i]);
 	    assert(0);
 	}else{
-	    printf("found %lu expectedly\n", answers[i]);
+	    printf("debug : found %lu expectedly\n", answers[i]);
 	}
 	i++;
     }
@@ -108,7 +108,7 @@ full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 		       (uintptr_t) p, answers[i]);
 		assert(0);
 	    }else{
-		printf("found %lu expectedly\n", answers[i]);
+		printf("debug : found %lu expectedly\n", answers[i]);
 	    }
 	    i++;
 	}
@@ -686,7 +686,8 @@ remove_from_three_depth_tree(){
 	answers8[] = { 7, 17 },
 	answers9[] = { 42 },
 	answers10[] = { 1, 4, 7, 17, 19, 20, 42 },
-	answers11[] = { 1, 4, 7, 17, 19, 20 };
+	answers11[] = { 1, 4, 7, 17, 19, 20 },
+	answers12[] = { 7, 17, 20 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -806,19 +807,10 @@ remove_from_three_depth_tree(){
     bpt_search(tree, (void *) 20, &node);
     assert(node->parent == node->next->parent);
 
-    /* This removal makes the internal node borrowing happen again */
-    bpt_delete(tree, (void *) 42);
-    assert(ll_get_length(tree->root->keys) == 1);
-    assert(tree->root->keys->head->data == (void *) 17);
-    assert(ll_get_length(tree->root->children) == 2);
-
-    node = (bpt_node *) ll_ref_index_data(tree->root->children, 0);
-    assert(ll_get_length(node->keys) == 1);
-    assert(node->keys->head->data == (void *) 7);
-
-    node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
-    assert(ll_get_length(node->keys) == 1);
-    assert(node->keys->head->data == (void *) 20);
+    /* This removal shrinks the height of the tree */
+    assert(bpt_delete(tree, (void *) 42) == true);
+    assert(ll_get_length(tree->root->keys) == 3);
+    one_node_keys_comparison_test(tree->root, answers12);
 
     for (i = 0; i < 6; i++){
 	node = NULL;
