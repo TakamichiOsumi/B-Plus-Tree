@@ -688,6 +688,7 @@ remove_from_three_depth_tree(){
 	indexes8[] = { 42 },
 	indexes9[] = { 7, 17, 20 },
 	indexes10[] = { 9, 17, 20 },
+	indexes11[] = { 17, 19, 20 },
 	/* Check the leaves */
 	leaves0[] = { 1, 4, 7, 10, 17, 19, 20, 42 },
 	leaves1[] = { 1, 4, 7, 17, 19, 20, 42 },
@@ -741,8 +742,8 @@ remove_from_three_depth_tree(){
 
     /* Check the values of indexes */
     assert(tree->root->keys->head->data == (void *) 20);
-    one_node_keys_comparison_test((bpt_node *) ll_ref_index_data(tree->root->children, 1),
-				  indexes3);
+    node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
+    one_node_keys_comparison_test(node, indexes3);
 
     /* Check the root's right child after '21' removal */
     assert(bpt_delete(tree, (void *) 21) == true);
@@ -853,8 +854,17 @@ remove_from_three_depth_tree(){
     for (i = 0; i < 5; i++){
 	node = NULL;
 	assert(bpt_search(tree, (void *) leaves4[i], &node) == true);
+	printf("debug : found %lu\n", (uintptr_t) leaves4[i]);
     }
     one_node_keys_comparison_test(tree->root, indexes10);
+
+    bpt_search(tree, (void *) 17, &node);
+    assert(ll_get_length(node->keys) == 2);
+    bpt_dump_list(node->keys);
+
+    /* This should trigger a borrowing from right child */
+    assert(bpt_delete(tree, (void *) 9) == true);
+    one_node_keys_comparison_test(tree->root, indexes11);
 }
 
 static void

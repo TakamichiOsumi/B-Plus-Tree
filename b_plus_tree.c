@@ -483,14 +483,13 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
  * So, merging children uses some basic APIs for linked list such as
  * ll_tail_insert() or ll_remove_first_data().
  *
- * Update the curr_node's parent's 'keys' and 'children' according to
- * the merge.
+ * Update the parent's 'keys' and 'children' according to the merge.
  */
 static void *
 bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     linked_list *merged_keys, *merged_children;
     bpt_node *curr_child, *removed_child = NULL;
-    node *node;
+    node *np;
     void *deleted_key;
     int index = 0;
 
@@ -501,29 +500,39 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	merged_keys = ll_merge(curr_node->keys, curr_node->next->keys);
 
 	/* Merge children of current node with the ones of the next node */
-	while(ll_get_length(curr_node->next->children) > 0)
-	    ll_tail_insert(curr_node->children,
-			   ll_remove_first_data(curr_node->next->children));
+	while(ll_get_length(curr_node->next->children) > 0){
+	    curr_child = (bpt_node *) ll_remove_first_data(curr_node->next->children);
+	    /* If this node is an internal node, update the children's parents */
+	    if (!curr_node->is_leaf){
+		curr_child->parent = curr_node;
+	    }
+	    ll_tail_insert(curr_node->children, curr_child);
+	}
 	merged_children = curr_node->children;
-	node = curr_node->parent->children->head;
+	np = curr_node->parent->children->head;
     }else{
 	/* Merge keys */
 	merged_keys = ll_merge(curr_node->prev->keys, curr_node->keys);
 
 	/* Merge children of the prev node and ones of curr_node */
-	while(ll_get_length(curr_node->children) > 0)
-	    ll_tail_insert(curr_node->prev->children,
-			   ll_remove_first_data(curr_node->children));
+	while(ll_get_length(curr_node->children) > 0){
+	    curr_child = (bpt_node *) ll_remove_first_data(curr_node->children);
+	    /* Update children parent member if necessary */
+	    if (!curr_node->is_leaf){
+		curr_child->parent = curr_node->prev;
+	    }
+	    ll_tail_insert(curr_node->prev->children, curr_child);
+	}
 	merged_children = curr_node->prev->children;
-	node = curr_node->prev->parent->children->head;
+	np = curr_node->prev->parent->children->head;
     }
 
     /*
-     * Now 'node' points to the merged children. Search for the removed child
+     * Now 'np' points to the merged children. Search for the removed child
      * and get the index of the child to pass as an argument of ll_index_remove().
      */
     while(true){
-	curr_child = (bpt_node *) node->data;
+	curr_child = (bpt_node *) np->data;
 
 	if (with_right && curr_child == curr_node){
 	    /* Remove the next node of the current node */
@@ -544,7 +553,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	}
 
 	/* Iterate all children */
-	if ((node = node->next) == NULL)
+	if ((np = np->next) == NULL)
 	    break;
 	index++;
     }
@@ -862,8 +871,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    assert(curr_node->parent != NULL);
 	    has_left_sibling = true;
 	    if (((int) ll_get_length(curr_node->prev->keys)) - 1 >= min_key_num){
-
 		borrowed_from_left = true;
+
 		printf("*borrowing from the left node*\n");
 		printf("debug : the number of current node's keys = %d\n",
 		       ll_get_length(curr_node->keys));
@@ -915,11 +924,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	if (!borrowed_from_left && HAVE_SAME_PARENT(curr_node, curr_node->next)){
 	    assert(curr_node->parent != NULL);
 	    has_right_sibling = true;
+
 	    if (((int) ll_get_length(curr_node->next->keys)) - 1 >= min_key_num){
-
 		borrowed_from_right = true;
-		printf("*borrowing from the right node*\n");
 
+		printf("*borrowing from the right node*\n");
 		printf("debug : the number of current node's keys = %d\n",
 		       ll_get_length(curr_node->keys));
 
