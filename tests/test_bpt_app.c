@@ -687,7 +687,8 @@ remove_from_three_depth_tree(){
 	answers9[] = { 42 },
 	answers10[] = { 1, 4, 7, 17, 19, 20, 42 },
 	answers11[] = { 1, 4, 7, 17, 19, 20 },
-	answers12[] = { 7, 17, 20 };
+	answers12[] = { 7, 17, 20 },
+	answers13[] = { 1, 4, 7, 9, 17, 19, 20 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -822,9 +823,19 @@ remove_from_three_depth_tree(){
      * Insert some new data so as to test another scenario of tree's height
      * shrink.
      */
+    printf("debug : rebuild the tree to depth 3 tree\n");
+
     assert(bpt_insert(tree, (void *) 8, &e1) == true);
     assert(bpt_insert(tree, (void *) 9, &e1) == true);
     assert(bpt_insert(tree, (void *) 10, &e1) == true);
+
+    assert(bpt_delete(tree, (void *) 8) == true);
+    assert(bpt_delete(tree, (void *) 10) == true);
+
+    /* Check the leaves */
+    node = NULL;
+    assert(bpt_search(tree, (void *) 1, &node) == true);
+    full_keys_comparison_test(node, answers13);
 }
 
 static void
