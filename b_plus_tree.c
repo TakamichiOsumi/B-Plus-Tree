@@ -132,17 +132,18 @@ bpt_init(bpt_key_access_cb keys_key_access,
 /*
  * Return the right half node by ll_split().
  *
- * ll_split() returns the *left* half, so swap the return
- * value within this function.
+ * ll_split() returns the *left* half, so swap the return value within
+ * this function.
  *
- * This is required to connect the split nodes with other
- * existing nodes before and after the two split nodes.
+ * This is required to connect the split nodes with other existing nodes
+ * before and after the two split nodes.
  */
 static bpt_node *
 bpt_node_split(bpt_tree *bpt, bpt_node *curr_node){
     bpt_node *half;
     linked_list *left_keys, *left_children;
-    int node_num = (bpt->max_children % 2 == 0) ? (bpt->max_children / 2) : (bpt->max_children / 2) + 1;
+    int node_num = (bpt->max_children % 2 == 0) ? (bpt->max_children / 2) :
+	(bpt->max_children / 2) + 1;
 
     /* Create an empty node whose 'keys' and 'children' are null */
     half = bpt_gen_node();
@@ -231,6 +232,11 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    ll_index_insert(curr_node->children, new_child, new_child_index);
 	}
     }else{
+	/*
+	 * We have the maximum number of children in this node already. So,
+	 * adding a new key-value exeeds the limit. Split the current node,
+	 * distribute the keys and children stored there.
+	 */
 	bpt_node *right_half, *child;
 	void *copied_up_key = NULL;
 
@@ -246,9 +252,11 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	/* Split keys and children */
 	right_half = bpt_node_split(bpt, curr_node);
 
-	printf("debug : left (%d len : %p) => \n", ll_get_length(curr_node->keys), curr_node);
+	printf("debug : left (%d len : %p) => \n", ll_get_length(curr_node->keys),
+	       curr_node);
 	bpt_dump_list(curr_node->keys);
-	printf("debug : right (%d len : %p) => \n", ll_get_length(right_half->keys), right_half);
+	printf("debug : right (%d len : %p) => \n", ll_get_length(right_half->keys),
+	       right_half);
 	bpt_dump_list(right_half->keys);
 
 	/* Get the key that will go up and/or will be deleted */
@@ -257,9 +265,9 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	/*
 	 * Connect split nodes at the same depth.
 	 *
-	 * When there is other node on the right side of 'right_half',
-	 * make its 'prev' point to the 'right_half'. Skip if the
-	 * 'right_half' is the rightmost node.
+	 * When there is other node on the right side of 'right_half', make
+	 * its 'prev' point to the 'right_half'. Skip if the 'right_half' is
+	 * the rightmost node.
 	 */
 	right_half->prev = curr_node;
 	right_half->next = curr_node->next;
@@ -286,8 +294,8 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    }
 	    ll_end_iter(right_half->children);
 
-	    /* use the utility for debug */
-	    printf("debug : after split, dump children's keys.\n");
+	    /* Use the utility for debug */
+	    printf("debug : after split, dump children's keys\n");
 	    printf("Left internal node's children :\n");
 	    bpt_dump_children_keys(curr_node);
 	    printf("Right internal node's children :\n");
@@ -295,7 +303,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	}
 
 	if (!curr_node->parent){
-	    /* Create the new root */
+	    /* Create a new root */
 	    bpt_node *new_top;
 
 	    assert(curr_node->is_root == true);
@@ -319,7 +327,6 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    /*
 	     * Propagate the key insertion to the upper node. Notify the
 	     * upper node of the index to insert a new split right child.
-	     *
 	     * To determine the new child index, we will iterate all children
 	     * that the current node's parent stores. The new child should be
 	     * placed right after the current node.
@@ -400,9 +407,11 @@ bpt_search_internal(bpt_node *curr_node, void *new_key, bpt_node **leaf_node){
 
     if (diff == 0){
 	/* Exact key match */
-	if (curr_node->is_leaf)
+	if (curr_node->is_leaf){
+	    printf("debug : bpt_search_internal() found the same key in leaf node\n");
+
 	    return true;
-	else{
+	}else{
 	    /* Search for the right child */
 	    return bpt_search_internal(bpt_ref_index_child(curr_node, children_index + 1),
 				       new_key, leaf_node);
@@ -738,7 +747,42 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	}
 
 	if (HAVE_SAME_PARENT(curr_node, curr_node->next)){
-	    /* Move all necessary data to the next node */
+	    void *key;
+
+	    /*
+	     * In this scenario of tree height shrink, we can just move the
+	     * last parent's key and the current child node to the next node.
+	     * This is because we ensure that the parent key is bigger than
+	     * any other keys in this node or any other child nodes of this
+	     * node. Utilizing the parent's key can keep the entire order of
+	     * indexes and children.
+	     */
+	    key = ll_remove_first_data(curr_node->parent->keys);
+	    ll_asc_insert(curr_node->next->keys, key);
+	    ll_insert(curr_node->next->children,
+		      ll_remove_first_data(curr_node->children));
+
+	    printf("debug : the tree height has shrunk, with the insertion of the new key = %lu\n",
+		   (uintptr_t) key);
+
+	    /* Reconnect nodes. The previous node becomes the new root */
+	    bpt->root = curr_node->next;
+	    curr_node->next->is_root = true;
+	    curr_node->next->prev = NULL;
+	    curr_node->next->parent = NULL;
+
+	    /* Free the current root and the current node */
+	    ll_destroy(curr_node->parent->keys);
+	    ll_destroy(curr_node->parent->children);
+	    free(curr_node->parent);
+
+	    curr_node->next = NULL;
+	    curr_node->parent = NULL;
+	    ll_destroy(curr_node->keys);
+	    ll_destroy(curr_node->children);
+	    free(curr_node);
+
+	    /* Done with the key deletion */
 	    return;
 	}
     }

@@ -463,7 +463,7 @@ insert_and_create_three_depth_tree(void){
 }
 
 static void
-test_even_number_m(void){
+test_even_number_max_children(void){
     bpt_tree *tree;
     bpt_node *node;
     void *p;
@@ -815,8 +815,16 @@ remove_from_three_depth_tree(){
     for (i = 0; i < 6; i++){
 	node = NULL;
 	assert(bpt_search(tree, (void *) answers11[i], &node) == true);
-	printf("found : %lu\n", (uintptr_t) answers11[i]);
+	printf("debug : found %lu\n", (uintptr_t) answers11[i]);
     }
+
+    /*
+     * Insert some new data so as to test another scenario of tree's height
+     * shrink.
+     */
+    assert(bpt_insert(tree, (void *) 8, &e1) == true);
+    assert(bpt_insert(tree, (void *) 9, &e1) == true);
+    assert(bpt_insert(tree, (void *) 10, &e1) == true);
 }
 
 static void
@@ -840,7 +848,7 @@ test_bpt_insert(void){
     insert_and_create_three_depth_tree();
 
     printf("<Other variant of depth 3 tree>\n");
-    test_even_number_m();
+    test_even_number_max_children();
 }
 
 static void
