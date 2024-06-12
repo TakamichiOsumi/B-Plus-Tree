@@ -64,7 +64,6 @@ bpt_gen_node(void){
 
     node = (bpt_node *) bpt_malloc(sizeof(bpt_node));
     node->is_root = node->is_leaf = false;
-    node->n_keys = 0;
     node->keys = node->children = NULL;
     node->parent = node->prev = node->next = NULL;
 
@@ -155,10 +154,6 @@ bpt_node_split(bpt_tree *bpt, bpt_node *curr_node){
     /* Set the first right half child to NULL */
     ll_index_insert(curr_node->children, NULL, 0);
 
-    /* Update the list states */
-    half->n_keys = ll_get_length(half->keys);
-    curr_node->n_keys = ll_get_length(curr_node->keys);
-
     /* Copy other attributes to share */
     half->is_root = curr_node->is_root;
     half->is_leaf = curr_node->is_leaf;
@@ -217,8 +212,6 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 
     /* Does this node have room to store a new key ? */
     if (ll_get_length(curr_node->keys) < bpt->max_children){
-	curr_node->n_keys++;
-
 	if (curr_node->is_leaf){
 	    printf("debug : Add key = %lu to node (%p)\n",
 		   (uintptr_t) new_key, curr_node);
@@ -632,7 +625,6 @@ bpt_replace_index(bpt_node *curr_node, bool from_right){
     ll_end_iter(curr_node->parent->children);
 
     assert(ll_remove_by_key(curr_node->parent->keys, replaced_index) != NULL);
-    curr_node->parent->n_keys--;
     assert((key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
     ll_asc_insert(curr_node->parent->keys, key);
 
@@ -805,7 +797,6 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	     * proves the key exists.
 	     */
 	    assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
-	    curr_node->n_keys--;
 	    printf("debug : key = '%lu' was removed on the leaf node\n", (uintptr_t) removed_key);
 	    /* TODO : Remove the record as well */
 	}else{
@@ -820,7 +811,6 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 		right_child = bpt_ref_right_child_by_key(curr_node, removed_key);
 		ll_remove_by_key(curr_node->keys, removed_key);
-		curr_node->n_keys--;
 		assert((key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
 		printf("debug : %lu was removed and %lu was inserted as the min key\n",
 		       (uintptr_t) removed_key, (uintptr_t) key);
@@ -840,7 +830,6 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	if (curr_node->is_leaf){
 	    /* This leaf node must contain the removed key */
 	    assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
-	    curr_node->n_keys--;
 	    printf("debug : %lu was removed on the leaf node\n", (uintptr_t) removed_key);
 	    /* TODO : Remove the record as well */
 	}else{
@@ -855,7 +844,6 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 		right_child = bpt_ref_right_child_by_key(curr_node, removed_key);
 		ll_remove_by_key(curr_node->keys, removed_key);
-		curr_node->n_keys--;
 		assert((key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
 		ll_asc_insert(curr_node->keys, key);
 
@@ -987,6 +975,9 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		 * the last key in the root, but the key is necessary to make
 		 * the keys and children searchable. Insert the last key to the
 		 * merged node and keep the tree consistency.
+		 *
+		 * The next call of bpt_delete_internal() will promote the merged
+		 * node as root in the processing at the beginning of the function.
 		 */
 		if (curr_node->prev->parent->is_root == true &&
 		    ll_get_length(curr_node->prev->parent->keys) == 0){
