@@ -687,11 +687,13 @@ remove_from_three_depth_tree(){
 	indexes7[] = { 7, 17 },
 	indexes8[] = { 42 },
 	indexes9[] = { 7, 17, 20 },
+	indexes10[] = { 9, 17, 20 },
 	/* Check the leaves */
 	leaves0[] = { 1, 4, 7, 10, 17, 19, 20, 42 },
 	leaves1[] = { 1, 4, 7, 17, 19, 20, 42 },
 	leaves2[] = { 1, 4, 7, 17, 19, 20 },
-	leaves3[] = { 1, 4, 7, 9, 17, 19, 20 };
+	leaves3[] = { 1, 4, 7, 9, 17, 19, 20 },
+	leaves4[] = { 1, 9, 17, 19, 20 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -840,10 +842,19 @@ remove_from_three_depth_tree(){
     assert(bpt_delete(tree, (void *) 8) == true);
     assert(bpt_delete(tree, (void *) 10) == true);
 
-    /* Check the leaves */
+    /* Check the leaves just in case */
     node = NULL;
     assert(bpt_search(tree, (void *) 1, &node) == true);
     full_keys_comparison_test(node, leaves3);
+
+    assert(bpt_delete(tree, (void *) 7) == true);
+    assert(bpt_delete(tree, (void *) 4) == true);
+
+    for (i = 0; i < 5; i++){
+	node = NULL;
+	assert(bpt_search(tree, (void *) leaves4[i], &node) == true);
+    }
+    one_node_keys_comparison_test(tree->root, indexes10);
 }
 
 static void
