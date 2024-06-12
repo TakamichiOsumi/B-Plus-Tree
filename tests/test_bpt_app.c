@@ -673,22 +673,25 @@ remove_from_three_depth_tree(){
     bpt_tree *tree;
     bpt_node *node;
     uintptr_t i,
+	/* First inserted data */
 	insertion[] = { 1, 4, 7, 10, 17, 19,
 			20, 21, 25, 28, 31, 42 },
-	answers0[] = { 20 },
-	answers1[] = { 7, 17 },
-	answers2[] = { 25, 31 },
-	answers3[] = { 21, 31 },
-	answers4[] = { 31, 42 },
-	answers5[] = { 7 },
-	answers6[] = { 20, 42 },
-	answers7[] = { 1, 4, 7, 10, 17, 19, 20, 42 },
-	answers8[] = { 7, 17 },
-	answers9[] = { 42 },
-	answers10[] = { 1, 4, 7, 17, 19, 20, 42 },
-	answers11[] = { 1, 4, 7, 17, 19, 20 },
-	answers12[] = { 7, 17, 20 },
-	answers13[] = { 1, 4, 7, 9, 17, 19, 20 };
+	/* Test data sets */
+	indexes0[] = { 20 },
+	indexes1[] = { 7, 17 },
+	indexes2[] = { 25, 31 },
+	indexes3[] = { 21, 31 },
+	indexes4[] = { 31, 42 },
+	indexes5[] = { 7 },
+	indexes6[] = { 20, 42 },
+	indexes7[] = { 7, 17 },
+	indexes8[] = { 42 },
+	indexes9[] = { 7, 17, 20 },
+	/* Check the leaves */
+	leaves0[] = { 1, 4, 7, 10, 17, 19, 20, 42 },
+	leaves1[] = { 1, 4, 7, 17, 19, 20, 42 },
+	leaves2[] = { 1, 4, 7, 17, 19, 20 },
+	leaves3[] = { 1, 4, 7, 9, 17, 19, 20 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -719,13 +722,13 @@ remove_from_three_depth_tree(){
     assert(node->parent != node->next->next->next->parent);
 
     /* The root */
-    one_node_keys_comparison_test(node->parent->parent, answers0);
+    one_node_keys_comparison_test(node->parent->parent, indexes0);
 
     /* The left node */
-    one_node_keys_comparison_test(node->parent, answers1);
+    one_node_keys_comparison_test(node->parent, indexes1);
 
     /* The left node */
-    one_node_keys_comparison_test(node->next->next->next->parent, answers2);
+    one_node_keys_comparison_test(node->next->next->next->parent, indexes2);
 
     /* The leaf nodes */
     full_keys_comparison_test(node, insertion);
@@ -737,14 +740,14 @@ remove_from_three_depth_tree(){
     /* Check the values of indexes */
     assert(tree->root->keys->head->data == (void *) 20);
     one_node_keys_comparison_test((bpt_node *) ll_ref_index_data(tree->root->children, 1),
-				  answers3);
+				  indexes3);
 
     /* Check the root's right child after '21' removal */
     assert(bpt_delete(tree, (void *) 21) == true);
     assert(tree->root->keys->head->data == (void *) 20);
     node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
     assert(ll_get_length(node->keys) == 2);
-    one_node_keys_comparison_test(node, answers4);
+    one_node_keys_comparison_test(node, indexes4);
 
     /* The internal node borrowing */
     printf("debug : start the internal node borrowing\n");
@@ -757,19 +760,19 @@ remove_from_three_depth_tree(){
     /* The left child */
     node = (bpt_node *) ll_ref_index_data(tree->root->children, 0);
     assert(ll_get_length(node->keys) == 1);
-    one_node_keys_comparison_test(node, answers5);
+    one_node_keys_comparison_test(node, indexes5);
 
      /* The right child */
     node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
     assert(ll_get_length(node->keys) == 2);
-    one_node_keys_comparison_test(node, answers6);
+    one_node_keys_comparison_test(node, indexes6);
 
     /* The leaf nodes */
     assert(bpt_search(tree, (void *) 1, &node));
-    full_keys_comparison_test(node, answers7);
+    full_keys_comparison_test(node, leaves0);
     for (i = 0; i < 8; i++){
 	node = NULL;
-	assert(bpt_search(tree, (void *) answers7[i], &node) == true);
+	assert(bpt_search(tree, (void *) leaves0[i], &node) == true);
 	assert(node != NULL);
     }
 
@@ -782,20 +785,25 @@ remove_from_three_depth_tree(){
     /* The left child */
     node = (bpt_node *) ll_ref_index_data(tree->root->children, 0);
     assert(ll_get_length(node->keys) == 2);
-    one_node_keys_comparison_test(node, answers8);
+    one_node_keys_comparison_test(node, indexes7);
 
     /* The right child */
     node = (bpt_node *) ll_ref_index_data(tree->root->children, 1);
     assert(ll_get_length(node->keys) == 1);
-    one_node_keys_comparison_test(node, answers9);
+    one_node_keys_comparison_test(node, indexes8);
 
     bpt_search(tree, (void *) 1, &node);
     assert(ll_get_length(node->parent->children) == 3);
 
+    /* full leaves tests */
     for (i = 0; i < 7; i++){
 	node = NULL;
-	assert(bpt_search(tree, (void *) answers10[i], &node) == true);
+	assert(bpt_search(tree, (void *) leaves1[i], &node) == true);
     }
+
+    node = NULL;
+    bpt_search(tree, (void *) 1, &node);
+    full_keys_comparison_test(node, leaves1);
 
     /* Test the 'parent' attributes for debug */
     node = NULL;
@@ -811,12 +819,12 @@ remove_from_three_depth_tree(){
     /* This removal shrinks the height of the tree */
     assert(bpt_delete(tree, (void *) 42) == true);
     assert(ll_get_length(tree->root->keys) == 3);
-    one_node_keys_comparison_test(tree->root, answers12);
+    one_node_keys_comparison_test(tree->root, indexes9);
 
     for (i = 0; i < 6; i++){
 	node = NULL;
-	assert(bpt_search(tree, (void *) answers11[i], &node) == true);
-	printf("debug : found %lu\n", (uintptr_t) answers11[i]);
+	assert(bpt_search(tree, (void *) leaves2[i], &node) == true);
+	printf("debug : found %lu\n", (uintptr_t) leaves2[i]);
     }
 
     /*
@@ -835,7 +843,7 @@ remove_from_three_depth_tree(){
     /* Check the leaves */
     node = NULL;
     assert(bpt_search(tree, (void *) 1, &node) == true);
-    full_keys_comparison_test(node, answers13);
+    full_keys_comparison_test(node, leaves3);
 }
 
 static void
