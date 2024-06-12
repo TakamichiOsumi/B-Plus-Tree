@@ -444,8 +444,7 @@ bpt_search(bpt_tree *bpt, void* new_key, bpt_node **leaf_node){
 /*
  * Return the minimum key from one subtree.
  *
- * Go down the subtree until we reach the leftmost
- * child of the leaf node.
+ * Go down the subtree until we reach the leftmost child of the leaf node.
  */
 static void *
 bpt_ref_subtree_minimum_key(bpt_node *node){
@@ -478,13 +477,12 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
 }
 
 /*
- * Don't expect children can perform 'key_access_cb' and
- * 'key_compare_cb'. So, merging children uses some basic
- * APIs for linked list such as ll_tail_insert() or
- * ll_remove_first_data().
+ * Don't expect children can perform 'key_access_cb' and 'key_compare_cb'.
+ * So, merging children uses some basic APIs for linked list such as
+ * ll_tail_insert() or ll_remove_first_data().
  *
- * Update the curr_node's parent's 'keys' and 'children'
- * according to the merge.
+ * Update the curr_node's parent's 'keys' and 'children' according to
+ * the merge.
  */
 static void
 bpt_merge_nodes(bpt_node *curr_node, bool with_right){
@@ -697,22 +695,30 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	 */
 	assert(curr_node->parent != NULL);
 	assert(curr_node->parent->is_root == true);
-	assert(ll_get_length(curr_node->parent->keys) >= 1);
+	assert(ll_get_length(curr_node->parent->keys) == 1);
 
 	if (HAVE_SAME_PARENT(curr_node->prev, curr_node)){
+	    bpt_node *last_child;
+	    void *min_key;
+
 	    /*
-	     * Move all necessary parent's keys and the current node's children
-	     * to the previous node.
+	     * Move the current node's children to the previous node.
+	     * Meanwhile, it's possible that the parent's key can't be
+	     * used as is. In such cases, obtain the minimum value from the
+	     * right child and utilize it as the key value added to the
+	     * previous node. This ensures indexes are stored correctly.
 	     */
-	    while(ll_get_length(curr_node->parent->keys) > 0)
-		ll_asc_insert(curr_node->prev->keys,
-			      ll_remove_first_data(curr_node->parent->keys));
-	    while(ll_get_length(curr_node->children) > 0)
-		ll_tail_insert(curr_node->prev->children,
-			       ll_remove_first_data(curr_node->children));
+	    last_child = ll_remove_first_data(curr_node->children);
+	    min_key = bpt_ref_subtree_minimum_key(last_child);
+	    ll_asc_insert(curr_node->prev->keys, min_key);
+	    ll_tail_insert(curr_node->prev->children, last_child);
+
+	    printf("debug : the tree height has shrunk, with the insertion of the new key = %lu\n",
+		   (uintptr_t) min_key);
 
 	    /* Reconnect nodes. The previous node becomes the new root */
 	    bpt->root = curr_node->prev;
+	    curr_node->prev->is_root = true;
 	    curr_node->prev->next = NULL;
 	    curr_node->prev->parent = NULL;
 
