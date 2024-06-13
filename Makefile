@@ -6,7 +6,7 @@ DEPENDENCY_LIB	= Linked-List
 COMPONENTS	= b_plus_tree.c
 OBJ_COMPONENTS	= b_plus_tree.o
 
-TEST_APP	= run_bptree
+TEST_APP	= key_management_bptree
 
 LIB	= libbplustree.a
 
@@ -19,7 +19,7 @@ $(OBJ_COMPONENTS):
 	$(CC) $(CFLAGS) b_plus_tree.c -c
 
 $(TEST_APP): $(OBJ_COMPONENTS)
-	$(CC) $(CFLAGS) -L Linked-List -llinked_list tests/test_bpt_app.c $^ -o ./tests/$@
+	$(CC) $(CFLAGS) -L Linked-List -llinked_list tests/keys_bpt_app.c $^ -o ./tests/$@
 
 .phony: clean test
 

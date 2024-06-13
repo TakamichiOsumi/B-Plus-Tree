@@ -968,6 +968,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 	/* Merge nodes if possible */
 	if (borrowed_from_left == false && borrowed_from_right == false){
+
 	    printf("debug : borrowing a key didn't happen\n");
 
 	    if (has_left_sibling){
