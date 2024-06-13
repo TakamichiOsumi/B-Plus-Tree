@@ -54,7 +54,7 @@ bpt_dump_children_keys(bpt_node *curr_node){
 }
 
 /*
- * Return empty and nullified node
+ * Return empty and nullified node.
  *
  * Exported for API tests.
  */
@@ -436,7 +436,6 @@ bpt_search_internal(bpt_node *curr_node, void *new_key, bpt_node **leaf_node){
  */
 bool
 bpt_search(bpt_tree *bpt, void* new_key, bpt_node **leaf_node){
-
     if (bpt != NULL && bpt->root != NULL && new_key != NULL)
 	return bpt_search_internal(bpt->root, new_key, leaf_node);
 
@@ -665,6 +664,16 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
 }
 
 static void
+bpt_free_node(bpt_node *node){
+    if (node != NULL){
+	ll_destroy(node->keys);
+	ll_destroy(node->children);
+	free(node);
+	node = NULL;
+    }
+}
+
+static void
 bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
     int min_key_num;
 
@@ -686,14 +695,13 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	assert(curr_node->next == NULL);
 
 	child = ll_remove_first_data(curr_node->children);
+	/* Reconnect nodes */
 	child->is_root = true;
 	child->parent = NULL;
 	bpt->root = child;
 
-	ll_destroy(curr_node->keys);
-	ll_destroy(curr_node->children);
-
-	free(curr_node);
+	/* Free the unnecessary node */
+	bpt_free_node(curr_node);
 
 	printf("debug : completed root promotion\n");
 
@@ -730,7 +738,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    ll_asc_insert(curr_node->prev->keys, min_key);
 	    ll_tail_insert(curr_node->prev->children, last_child);
 
-	    printf("debug : the tree height has shrunk, with the insertion of the new key = %lu\n",
+	    printf("debug : the tree height has shrunk, with key migration = %lu\n",
 		   (uintptr_t) min_key);
 
 	    /* Reconnect nodes. The previous node will become the new root */
@@ -740,15 +748,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    curr_node->prev->parent = NULL;
 
 	    /* Free the current root and the current node */
-	    ll_destroy(curr_node->parent->keys);
-	    ll_destroy(curr_node->parent->children);
-	    free(curr_node->parent);
-
-	    curr_node->prev = NULL;
-	    curr_node->parent = NULL;
-	    ll_destroy(curr_node->keys);
-	    ll_destroy(curr_node->children);
-	    free(curr_node);
+	    bpt_free_node(curr_node->parent);
+	    bpt_free_node(curr_node);
 
 	    /* Done with the key deletion */
 	    return;
@@ -770,7 +771,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    ll_insert(curr_node->next->children,
 		      ll_remove_first_data(curr_node->children));
 
-	    printf("debug : the tree height has shrunk, with the insertion of the new key = %lu\n",
+	    printf("debug : the tree height has shrunk, with key migration = %lu\n",
 		   (uintptr_t) key);
 
 	    /* Reconnect nodes. The next node will become the new root */
@@ -780,15 +781,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    curr_node->next->parent = NULL;
 
 	    /* Free the current root and the current node */
-	    ll_destroy(curr_node->parent->keys);
-	    ll_destroy(curr_node->parent->children);
-	    free(curr_node->parent);
-
-	    curr_node->next = NULL;
-	    curr_node->parent = NULL;
-	    ll_destroy(curr_node->keys);
-	    ll_destroy(curr_node->children);
-	    free(curr_node);
+	    bpt_free_node(curr_node->parent);
+	    bpt_free_node(curr_node);
 
 	    /* Done with the key deletion */
 	    return;
