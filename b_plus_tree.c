@@ -797,10 +797,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    /*
 	     * If this is a leaf node, it must contain the removed key, because
 	     * bpt_search() before the first call of bpt_delete_internal() already
-	     * proves the key exists.
+	     * proves that the key exists.
 	     */
 	    assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
-	    printf("debug : key = '%lu' was removed on the leaf node\n", (uintptr_t) removed_key);
+	    printf("debug : removed key = '%lu' on the leaf node\n",
+		   (uintptr_t) removed_key);
 	    /* TODO : Remove the record as well */
 	}else{
 	    /*
@@ -833,7 +834,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	if (curr_node->is_leaf){
 	    /* This leaf node must contain the removed key */
 	    assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
-	    printf("debug : %lu was removed on the leaf node\n", (uintptr_t) removed_key);
+	    printf("debug : %lu was removed on the leaf node\n",
+		   (uintptr_t) removed_key);
 	    /* TODO : Remove the record as well */
 	}else{
 	    /*
@@ -850,7 +852,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		assert((key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
 		ll_asc_insert(curr_node->keys, key);
 
-		printf("debug : %lu was removed and %lu was inserted as the min key\n",
+		printf("debug : removed %lu and inserted %lu as the min key\n",
 		       (uintptr_t) removed_key, (uintptr_t) key);
 
 		if (curr_node->parent)
@@ -867,8 +869,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    if (((int) ll_get_length(curr_node->prev->keys)) - 1 >= min_key_num){
 		borrowed_from_left = true;
 
-		printf("*borrowing from the left node*\n");
-		printf("debug : the number of current node's keys = %d\n",
+		printf("debub : borrowing from the left node\n"
+		       "debug : the number of current node's keys = %d\n",
 		       ll_get_length(curr_node->keys));
 
 		if (curr_node->is_leaf){
@@ -898,9 +900,9 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		    assert(ll_remove_by_key(curr_node->parent->keys, middle_key) != NULL);
 		    ll_asc_insert(curr_node->parent->keys, largest_key);
 
-		    printf("[FROM] Left internal node's children :\n");
+		    printf("debug : [FROM] Left internal node's children :\n");
 		    bpt_dump_list(curr_node->prev->keys);
-		    printf("[FROM] Right internal nodes's children :\n");
+		    printf("debug : [TO] Right internal nodes's children :\n");
 		    bpt_dump_list(curr_node->keys);
 
 		    /* Whenever we borrow an internal node's child, update its attributes */
@@ -948,9 +950,9 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		    assert(ll_remove_by_key(curr_node->parent->keys, middle_key) != NULL);
 		    ll_asc_insert(curr_node->parent->keys, smallest_key);
 
-		    printf("[FROM] Right internal node's children :\n");
+		    printf("debug : [FROM] Right internal node's children :\n");
 		    bpt_dump_list(curr_node->next->keys);
-		    printf("[TO] Left internal nodes's children :\n");
+		    printf("debug : [TO] Left internal nodes's children :\n");
 		    bpt_dump_list(curr_node->keys);
 
 		    /* Whenever we borrow an internal node's child, update its attributes */
@@ -995,7 +997,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		    ll_asc_insert(curr_node->keys, deleted_key);
 		}
 	    }else{
-		printf("debug : merging nodes didn't happen\n");
+		printf("debug : merging nodes didn't happen either\n");
 	    }
 	}
 
