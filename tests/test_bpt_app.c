@@ -865,6 +865,22 @@ remove_from_three_depth_tree(){
     /* This should trigger a borrowing from right child */
     assert(bpt_delete(tree, (void *) 9) == true);
     one_node_keys_comparison_test(tree->root, indexes11);
+
+    assert(bpt_delete(tree, (void *) 17) == true);
+    assert(bpt_delete(tree, (void *) 19) == true);
+    assert(bpt_delete(tree, (void *) 20) == true);
+
+    /* Except for one key, all keys should be removed */
+    node = NULL;
+    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(node->parent == NULL);
+    assert(node->prev == NULL);
+    assert(node->next == NULL);
+    assert(ll_get_length(tree->root->keys) == 1);
+    assert(tree->root->keys->head->data == (void *) 1);
+
+    assert(bpt_delete(tree, (void *) 1) == true);
+    assert(ll_get_length(tree->root->keys) == 0);
 }
 
 static void
