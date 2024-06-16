@@ -113,6 +113,29 @@ full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     }
 }
 
+/* Check all the keys at the same level from right to left */
+static void
+reverse_full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
+    int i = 0;
+    uintptr_t *p;
+
+    assert(node != NULL);
+
+    while(true){
+	for (i = ll_get_length(node->keys) - 1; i >= 0; i--){
+	    p = ll_ref_index_data(node->keys, i);
+	    if ((uintptr_t) p != answers[i]){
+		printf("debug : the expectation contradicted the order of leaves (%lu vs. %lu)\n",
+		       (uintptr_t) p, (uintptr_t) answers[i]);
+	    }else{
+		printf("debug : iterating leaf nodes hit %lu\n", (uintptr_t) p);
+	    }
+	}
+	if ((node = node->prev) == NULL)
+	    break;
+    }
+}
+
 static employee emp = { 1, "dummy" };
 
 static void
@@ -451,13 +474,15 @@ static void
 test_even_number_max_children(void){
     bpt_tree *tree;
     bpt_node *node;
-    void *p;
     uintptr_t answer = 1,
 	answers[] = { 1, 2, 3, 4, 5,
 		      6, 7, 8, 9, 10,
 		      11, 12, 13, 14, 15,
-		      16, 17, 18, 19, 20 };
-    int i;
+		      16, 17, 18, 19, 20 },
+	reversed[]  = { 20, 19, 18, 17, 16,
+			15, 14, 13, 12, 11,
+			10, 9, 8, 7, 6, 5,
+			4, 3, 2, 1 };
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -484,22 +509,8 @@ test_even_number_max_children(void){
     assert(bpt_search(tree, (void *) 20, &node) == true);
     assert(node != NULL);
 
-    answer = 20;
-    while(true){
-	for (i = ll_get_length(node->keys) - 1; i >= 0; i--){
-	    p = ll_ref_index_data(node->keys, i);
-	    if ((uintptr_t) p != answer){
-		printf("debug : the expectation contradicted the order of leaves (%lu vs. %lu)\n",
-		       (uintptr_t) p, (uintptr_t) answer);
-	    }else{
-		printf("debug : iterating leaf nodes got %lu\n",
-		       (uintptr_t) p);
-	    }
-	    answer--;
-	}
-	if ((node = node->prev) == NULL)
-	    break;
-    }
+    /* Check the doubly linked list of leaf nodes */
+    reverse_full_keys_comparison_test(node, reversed);
 }
 
 static void
