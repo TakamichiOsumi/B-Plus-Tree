@@ -857,7 +857,7 @@ remove_from_three_depth_tree(){
 }
 
 static void
-test_bpt_search(void){
+keys_test_bpt_search(void){
     printf("<Search key test from single node>\n");
     search_single_node_test();
 
@@ -869,7 +869,7 @@ test_bpt_search(void){
 }
 
 static void
-test_bpt_insert(void){
+keys_test_bpt_insert(void){
     printf("<Create depth 2 tree>\n");
     insert_and_create_two_depth_tree();
 
@@ -881,7 +881,7 @@ test_bpt_insert(void){
 }
 
 static void
-test_bpt_remove(void){
+keys_test_bpt_remove(void){
     printf("<Remove key from 1 root node>\n");
     remove_from_one_root();
 
@@ -895,9 +895,11 @@ test_bpt_remove(void){
 int
 main(int argc, char **argv){
 
-    test_bpt_search();
-    test_bpt_insert();
-    test_bpt_remove();
+    printf("Perform the tests for key search, insert and delete...\n");
+
+    keys_test_bpt_search();
+    keys_test_bpt_insert();
+    keys_test_bpt_remove();
 
     printf("All tests are done gracefully\n");
 

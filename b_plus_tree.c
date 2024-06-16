@@ -274,7 +274,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    printf("debug : delete the copied up key from the internal node\n");
 	    (void) ll_remove_first_data(right_half->keys);
 	    assert((p = ll_remove_first_data(right_half->children)) == NULL);
-	    printf("debug : removed internal node's key = %lu. Left key num = %d\n",
+	    printf("debug : removed internal node's key = %lu. left key num = %d\n",
 		   (uintptr_t) copied_up_key, ll_get_length(right_half->keys));
 
 	    /*
