@@ -73,7 +73,7 @@ one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     ll_begin_iter(node->keys);
     while ((p = ll_get_iter_data(node->keys)) != NULL){
 	if ((uintptr_t) p != answers[i]){
-	    printf("the expected value is not same as leaf node value. %lu vs. %lu\n",
+	    printf("debug : the expected value is not same as leaf node value. %lu vs. %lu\n",
 		   (uintptr_t) p, answers[i]);
 	    assert(0);
 	}else{
@@ -97,7 +97,7 @@ full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 	ll_begin_iter(node->keys);
 	while((p = (void *) ll_get_iter_data(node->keys)) != NULL){
 	    if ((uintptr_t) p != answers[i]){
-		printf("the expected value is not same as leaf node value. %lu vs. %lu\n",
+		printf("debug : the expected value is not same as leaf node value. %lu vs. %lu\n",
 		       (uintptr_t) p, answers[i]);
 		assert(0);
 	    }else{
@@ -113,15 +113,7 @@ full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     }
 }
 
-employee *iter,
-    e1 = { 1, "foo" },
-    e2 = { 2, "bar" },
-    e3 = { 3, "bazz" },
-    e4 = { 4, "xxxx" },
-    e5 = { 5, "yyyy" },
-    e6 = { 6, "aaa"  },
-    e7 = { 7, "bbb"  },
-    e8 = { 8, "ccc"  };
+static employee emp = { 1, "dummy" };
 
 static void
 search_single_node_test(void){
@@ -138,11 +130,11 @@ search_single_node_test(void){
 
     /* Construct one root without any leaf nodes */
     ll_asc_insert(tree->root->keys, (void *) 4);
-    ll_asc_insert(tree->root->children, (void *) &e4);
+    ll_asc_insert(tree->root->children, (void *) &emp);
     ll_asc_insert(tree->root->keys, (void *) 1);
-    ll_asc_insert(tree->root->children, (void *) &e1);
+    ll_asc_insert(tree->root->children, (void *) &emp);
     ll_asc_insert(tree->root->keys, (void *) 2);
-    ll_asc_insert(tree->root->children, (void *) &e2);
+    ll_asc_insert(tree->root->children, (void *) &emp);
 
     /* Exact key match */
     node = NULL;
@@ -375,13 +367,13 @@ insert_and_create_two_depth_tree(void){
 		    employee_free,
 		    5);
 
-    assert(bpt_insert(tree, (void *) 1, &e1) == true);
-    assert(bpt_insert(tree, (void *) 2, &e2) == true);
-    assert(bpt_insert(tree, (void *) 3, &e3) == true);
-    assert(bpt_insert(tree, (void *) 3, &e3) == false); /* Duplicate key */
-    assert(bpt_insert(tree, (void *) 4, &e4) == true);
-    assert(bpt_insert(tree, (void *) 5, &e5) == true);
-    assert(bpt_insert(tree, (void *) 6, &e6) == true);
+    assert(bpt_insert(tree, (void *) 1, &emp) == true);
+    assert(bpt_insert(tree, (void *) 2, &emp) == true);
+    assert(bpt_insert(tree, (void *) 3, &emp) == true);
+    assert(bpt_insert(tree, (void *) 3, &emp) == false); /* Duplicate key */
+    assert(bpt_insert(tree, (void *) 4, &emp) == true);
+    assert(bpt_insert(tree, (void *) 5, &emp) == true);
+    assert(bpt_insert(tree, (void *) 6, &emp) == true);
 
     /* After the node split, are all nodes correctly connected ? */
     right = left = NULL;
@@ -412,17 +404,17 @@ insert_and_create_three_depth_tree(void){
 		    employee_key_compare,
 		    employee_free, 3);
 
-    assert(bpt_insert(tree, (void *) 18, &e1) == true);
-    assert(bpt_insert(tree, (void *) 15, &e1) == true);
-    assert(bpt_insert(tree, (void *) 2,  &e1) == true);
-    assert(bpt_insert(tree, (void *) 4,  &e1) == true);
-    assert(bpt_insert(tree, (void *) 9,  &e1) == true);
-    assert(bpt_insert(tree, (void *) 30, &e1) == true);
-    assert(bpt_insert(tree, (void *) 10, &e1) == true);
-    assert(bpt_insert(tree, (void *) 11, &e1) == true);
-    assert(bpt_insert(tree, (void *) 12, &e1) == true);
-    assert(bpt_insert(tree, (void *) 14, &e1) == true);
-    assert(bpt_insert(tree, (void *) 20, &e1) == true);
+    assert(bpt_insert(tree, (void *) 18, &emp) == true);
+    assert(bpt_insert(tree, (void *) 15, &emp) == true);
+    assert(bpt_insert(tree, (void *) 2,  &emp) == true);
+    assert(bpt_insert(tree, (void *) 4,  &emp) == true);
+    assert(bpt_insert(tree, (void *) 9,  &emp) == true);
+    assert(bpt_insert(tree, (void *) 30, &emp) == true);
+    assert(bpt_insert(tree, (void *) 10, &emp) == true);
+    assert(bpt_insert(tree, (void *) 11, &emp) == true);
+    assert(bpt_insert(tree, (void *) 12, &emp) == true);
+    assert(bpt_insert(tree, (void *) 14, &emp) == true);
+    assert(bpt_insert(tree, (void *) 20, &emp) == true);
 
     /* Debug */
     node = NULL;
@@ -476,7 +468,7 @@ test_even_number_max_children(void){
 
     /* Insert 20 keys */
     for (answer = 20; answer >= 1; answer--)
-	assert(bpt_insert(tree, (void *) answer, &e1) == true);
+	assert(bpt_insert(tree, (void *) answer, &emp) == true);
 
     node = NULL;
     assert(bpt_search(tree, (void *) 1, &node) == true);
@@ -523,10 +515,10 @@ remove_from_one_root(void){
 		    employee_key_compare,
 		    employee_free, 5);
 
-    assert(bpt_insert(tree, (void *) 1, &e1) == true);
-    assert(bpt_insert(tree, (void *) 2, &e1) == true);
-    assert(bpt_insert(tree, (void *) 3, &e1) == true);
-    assert(bpt_insert(tree, (void *) 4, &e1) == true);
+    assert(bpt_insert(tree, (void *) 1, &emp) == true);
+    assert(bpt_insert(tree, (void *) 2, &emp) == true);
+    assert(bpt_insert(tree, (void *) 3, &emp) == true);
+    assert(bpt_insert(tree, (void *) 4, &emp) == true);
 
     /* Set up only one root node */
     assert(tree->root->is_root == true);
@@ -569,7 +561,7 @@ remove_from_two_depth_tree(void){
 
     /* Create the two depth tree */
     for (i = 1; i <= 6; i++)
-	assert(bpt_insert(tree, (void *) i, &e1) == true);
+	assert(bpt_insert(tree, (void *) i, &emp) == true);
 
     /* Is the tree same as the expectation ? */
     assert(ll_get_length(tree->root->keys) == 2);
@@ -693,10 +685,8 @@ remove_from_three_depth_tree(){
 		    employee_key_compare,
 		    employee_free, 3);
 
-    for (i = 0; i < 12; i++){
-	bpt_insert(tree, (void *) insertion[i], &e1);
-	printf("debug : done with insertion of %lu\n", insertion[i]);
-    }
+    for (i = 0; i < 12; i++)
+	bpt_insert(tree, (void *) insertion[i], &emp);
 
     loop_bpt_search(tree, 12, insertion);
 
@@ -812,9 +802,9 @@ remove_from_three_depth_tree(){
      */
     printf("debug : rebuild the tree to depth 3 tree\n");
 
-    assert(bpt_insert(tree, (void *) 8, &e1) == true);
-    assert(bpt_insert(tree, (void *) 9, &e1) == true);
-    assert(bpt_insert(tree, (void *) 10, &e1) == true);
+    assert(bpt_insert(tree, (void *) 8, &emp) == true);
+    assert(bpt_insert(tree, (void *) 9, &emp) == true);
+    assert(bpt_insert(tree, (void *) 10, &emp) == true);
 
     assert(bpt_delete(tree, (void *) 8) == true);
     assert(bpt_delete(tree, (void *) 10) == true);
