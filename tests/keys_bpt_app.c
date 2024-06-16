@@ -48,6 +48,22 @@ employee_key_access_from_employee(void *data){
     return data;
 }
 
+/*
+ * Execute bpt_search based on uintptr_t arrays,
+ * expecting all search should succeed.
+ */
+static void
+loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
+    int i;
+    bpt_node *node;
+
+    for (i = 0; i < count; i++){
+	node = NULL;
+	assert(bpt_search(bpt, (void *) answers[i], &node) == true);
+	assert(node != NULL);
+    }
+}
+
 /* Check only one node */
 static void
 one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
@@ -469,10 +485,7 @@ test_even_number_max_children(void){
     full_keys_comparison_test(node, answers);
 
     /* All search should be successful */
-    for (answer = 1; answer <= 20; answer++){
-	node = NULL;
-	assert(bpt_search(tree, (void *) answer, &node) == true);
-    }
+    loop_bpt_search(tree, 20, answers);
 
     /* Iterate in reverse order */
     node = NULL;
@@ -484,7 +497,7 @@ test_even_number_max_children(void){
 	for (i = ll_get_length(node->keys) - 1; i >= 0; i--){
 	    p = ll_ref_index_data(node->keys, i);
 	    if ((uintptr_t) p != answer){
-		printf("the expectation contradicted the order of leaves (%lu vs. %lu)\n",
+		printf("debug : the expectation contradicted the order of leaves (%lu vs. %lu)\n",
 		       (uintptr_t) p, (uintptr_t) answer);
 	    }else{
 		printf("debug : iterating leaf nodes got %lu\n",
@@ -685,11 +698,7 @@ remove_from_three_depth_tree(){
 	printf("debug : done with insertion of %lu\n", insertion[i]);
     }
 
-    for (i = 0; i < 12; i++){
-	node = NULL;
-	assert(bpt_search(tree, (void *) insertion[i], &node) == true);
-	printf("debug : found %lu\n", insertion[i]);
-    }
+    loop_bpt_search(tree, 12, insertion);
 
     /* Does the whole tree match the expected structure ? */
     node = NULL;
@@ -750,11 +759,7 @@ remove_from_three_depth_tree(){
     /* The leaf nodes */
     assert(bpt_search(tree, (void *) 1, &node));
     full_keys_comparison_test(node, leaves0);
-    for (i = 0; i < 8; i++){
-	node = NULL;
-	assert(bpt_search(tree, (void *) leaves0[i], &node) == true);
-	assert(node != NULL);
-    }
+    loop_bpt_search(tree, 8, leaves0);
 
     /* Another removal triggers a new internal node borrowing */
     assert(bpt_delete(tree, (void *) 10) == true);
@@ -775,11 +780,8 @@ remove_from_three_depth_tree(){
     bpt_search(tree, (void *) 1, &node);
     assert(ll_get_length(node->parent->children) == 3);
 
-    /* full leaves tests */
-    for (i = 0; i < 7; i++){
-	node = NULL;
-	assert(bpt_search(tree, (void *) leaves1[i], &node) == true);
-    }
+    /* Test key search */
+    loop_bpt_search(tree, 7, leaves1);
 
     node = NULL;
     bpt_search(tree, (void *) 1, &node);
@@ -801,15 +803,12 @@ remove_from_three_depth_tree(){
     assert(ll_get_length(tree->root->keys) == 3);
     one_node_keys_comparison_test(tree->root, indexes9);
 
-    for (i = 0; i < 6; i++){
-	node = NULL;
-	assert(bpt_search(tree, (void *) leaves2[i], &node) == true);
-	printf("debug : found %lu\n", (uintptr_t) leaves2[i]);
-    }
+    /* Test key search */
+    loop_bpt_search(tree, 6, leaves2);
 
     /*
-     * Insert some new data so as to test another scenario of tree's height
-     * shrink.
+     * Insert some new data so as to test another scenario of tree's
+     * height shrink.
      */
     printf("debug : rebuild the tree to depth 3 tree\n");
 
@@ -828,11 +827,8 @@ remove_from_three_depth_tree(){
     assert(bpt_delete(tree, (void *) 7) == true);
     assert(bpt_delete(tree, (void *) 4) == true);
 
-    for (i = 0; i < 5; i++){
-	node = NULL;
-	assert(bpt_search(tree, (void *) leaves4[i], &node) == true);
-	printf("debug : found %lu\n", (uintptr_t) leaves4[i]);
-    }
+    loop_bpt_search(tree, 5, leaves4);
+
     one_node_keys_comparison_test(tree->root, indexes10);
 
     bpt_search(tree, (void *) 17, &node);
