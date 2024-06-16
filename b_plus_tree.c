@@ -21,7 +21,7 @@ bpt_malloc(size_t size){
     return p;
 }
 
-/* static */ void
+static void
 bpt_dump_list(linked_list *list){
     void *p;
 

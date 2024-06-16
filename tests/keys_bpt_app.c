@@ -837,7 +837,6 @@ remove_from_three_depth_tree(){
 
     bpt_search(tree, (void *) 17, &node);
     assert(ll_get_length(node->keys) == 2);
-    bpt_dump_list(node->keys);
 
     /* This should trigger a borrowing from right child */
     assert(bpt_delete(tree, (void *) 9) == true);
