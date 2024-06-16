@@ -25,8 +25,6 @@ employee_key_compare(void *key1, void *key2){
     uintptr_t k1 = (uintptr_t) key1,
         k2 = (uintptr_t) key2;
 
-    /* printf("%lu vs. %lu\n", k1, k2); */
-
     if (k1 < k2){
         return -1;
     }else if (k1 == k2){
@@ -50,27 +48,6 @@ employee_key_access_from_employee(void *data){
     return data;
 }
 
-static void
-leaf_keys_comparison_test(linked_list *keys, uintptr_t answers[]){
-    int i;
-    void *p;
-
-    assert(keys != NULL);
-
-    ll_begin_iter(keys);
-    for (i = 0; i < ll_get_length(keys); i++){
-	p = ll_get_iter_data(keys);
-	if ((uintptr_t) p != answers[i]){
-	    printf("the value is not same as expectation, %lu vs %lu\n",
-		   (uintptr_t) p, answers[i]);
-	    exit(-1);
-	}else{
-	    printf("debug : found %lu expectedly\n", answers[i]);
-	}
-    }
-    ll_end_iter(keys);
-}
-
 /* Check only one node */
 static void
 one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
@@ -91,11 +68,11 @@ one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     ll_end_iter(node->keys);
 }
 
-/* Check the full nodes at the same level */
+/* Check the full nodes at the same level from left to right */
 static void
 full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     int i = 0;
-    void *p;
+    uintptr_t *p;
 
     assert(node != NULL);
 
@@ -545,7 +522,7 @@ remove_from_one_root(void){
 
     assert(bpt_delete(tree, (void *) 4) == true);
     assert(ll_get_length(tree->root->keys) == 3);
-    leaf_keys_comparison_test(tree->root->keys, answers1);
+    full_keys_comparison_test(tree->root, answers1);
 
     /* Failure case */
     assert(bpt_delete(tree, (void *) 0) == false);
@@ -555,7 +532,7 @@ remove_from_one_root(void){
     assert(bpt_delete(tree, (void *) 2) == true);
     assert(ll_get_length(tree->root->keys) == 2);
 
-    leaf_keys_comparison_test(tree->root->keys, answers2);
+    full_keys_comparison_test(tree->root, answers2);
 }
 
 static void
