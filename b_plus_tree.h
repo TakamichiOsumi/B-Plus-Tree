@@ -44,7 +44,7 @@ typedef struct bpt_node {
     struct bpt_node *parent;
 
     /*
-     * Build doubly linked list between leaf nodes.
+     * Build doubly linked list between nodes on same level.
      */
     struct bpt_node *prev;
     struct bpt_node *next;
