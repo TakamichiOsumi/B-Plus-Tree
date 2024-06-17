@@ -231,6 +231,12 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
     assert(curr_node != NULL);
     assert(new_key != NULL);
 
+    /*
+     * --------------------------------------
+     * The main part of the insertion process
+     * --------------------------------------
+     */
+
     /* Does this node have room to store a new key ? */
     if (ll_get_length(curr_node->keys) < bpt->max_keys){
 	if (curr_node->is_leaf){
@@ -373,6 +379,9 @@ bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){
 	return false;
     else{
 	bpt_insert_internal(bpt, leaf_node, new_key, new_data, 0, NULL);
+
+	/* Ensure that this insert doesn't break the b+ tree requirement */
+	assert(ll_get_length(leaf_node->keys) == ll_get_length(leaf_node->children));
 
 	return true;
     }
@@ -581,7 +590,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     /* Detach the removed child from the parent children as well. */
     assert(ll_index_remove(curr_node->parent->children, index + 1) != NULL);
 
-    printf("debug : merging nodes removed key = %lu at index = %d in %s parent node\n",
+    printf("debug : this merge removed key = %lu at index = %d in %s parent node\n",
 	   (uintptr_t) deleted_key, index, curr_node->parent->is_root ? "root" : "non-root");
 
     /* Reconnect all the merged results */
@@ -605,7 +614,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     }
     ll_end_iter(curr_node->parent->children);
 
-    printf("debug : merging updates number of parent's keys to '%d'\n",
+    printf("debug : this merge decrements the number of parent's keys to '%d'\n",
 	   ll_get_length(curr_node->parent->keys));
 
     return deleted_key;
@@ -692,6 +701,33 @@ bpt_free_node(bpt_node *node){
     }
 }
 
+/*
+ * Delete the pair of key and record on the leaf node.
+ */
+static void *
+bpt_delete_key_value_from_leaf(bpt_node *leaf, void *removed_key){
+    void *key;
+    int delete_index = 0;
+
+    assert(leaf->is_leaf == true);
+
+    ll_begin_iter(leaf->keys);
+    key = ll_get_iter_data(leaf->keys);
+    while(true){
+	if (key == removed_key)
+	    break;
+	/* Move to the next key */
+	key = ll_get_iter_data(leaf->keys);
+	delete_index++;
+    }
+    ll_end_iter(leaf->keys);
+
+    /* Discard the apparent removed key */
+    (void) ll_index_remove(leaf->keys, delete_index);
+
+    return ll_index_remove(leaf->children, delete_index);
+}
+
 static void
 bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
     int min_key_num = GET_MIN_KEY_NUM(bpt->max_keys);
@@ -703,14 +739,22 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	   curr_node->is_leaf ? "leaf" : "non-leaf",
 	   ll_get_length(curr_node->keys), ll_get_length(curr_node->children));
 
-    /* Need a root promotion ? */
-    if (curr_node->is_root && ll_get_length(curr_node->children) == 1){
+    /*
+     * Need a root promotion ?
+     *
+     * If this is a leaf node, skip this condition block. Otherwise,
+     * deleting one key (and its record) from one root node without
+     * any bpt_node * children hits this path.
+     */
+    if (curr_node->is_root && !curr_node->is_leaf &&
+	ll_get_length(curr_node->children) == 1){
 	bpt_node *child;
 
 	assert(curr_node->prev == NULL);
 	assert(curr_node->next == NULL);
 
 	child = ll_remove_first_data(curr_node->children);
+
 	/* Reconnect nodes */
 	child->is_root = true;
 	child->parent = NULL;
@@ -806,19 +850,25 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
     }
 
     /*
+     * --------------------------------------
      * The main part of the deletion process
+     * --------------------------------------
      */
-    if (((int) ll_get_length(curr_node->keys)) - 1 >= min_key_num){
+
+    if (ll_get_length(curr_node->keys) - 1 >= min_key_num){
 	if (curr_node->is_leaf){
+	    void *removed_record;
+
 	    /*
-	     * If this is a leaf node, it must contain the removed key, because
-	     * bpt_search() before the first call of bpt_delete_internal() already
-	     * proves that the key exists.
+	     * The call of bpt_search() before the first call of
+	     * bpt_delete_internal() already proves that the key exists.
+	     * So, this leaf node must contain the removed key.
 	     */
-	    assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
-	    printf("debug : removed key = '%lu' on the leaf node\n",
+	    removed_record = bpt_delete_key_value_from_leaf(curr_node,
+							    removed_key);
+	    printf("debug : remove key = '%lu' on the leaf node\n",
 		   (uintptr_t) removed_key);
-	    /* TODO : Remove the record as well */
+	    /* TODO : Write the deleted record to the argument for user reuse */
 	}else{
 	    /*
 	     * This internal node might or might not have the key. If
@@ -848,15 +898,17 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	void *borrowed_key;
 
 	if (curr_node->is_leaf){
+	    void *record;
+
 	    /* This leaf node must contain the removed key */
-	    assert(ll_remove_by_key(curr_node->keys, removed_key) != NULL);
+	    record = bpt_delete_key_value_from_leaf(curr_node, removed_key);
+
 	    printf("debug : %lu was removed on the leaf node\n",
 		   (uintptr_t) removed_key);
-	    /* TODO : Remove the record as well */
 	}else{
 	    /*
 	     * This internal node may not have the removed key. If the
-	     * index has the key, then replace the index with right child's
+	     * indexes has the key, then replace the index with right child's
 	     * minimum key.
 	     */
 	    if (ll_has_key(curr_node->keys, removed_key) == true){
@@ -882,7 +934,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	if (HAVE_SAME_PARENT(curr_node, curr_node->prev)){
 	    assert(curr_node->parent != NULL);
 	    has_left_sibling = true;
-	    if (((int) ll_get_length(curr_node->prev->keys)) - 1 >= min_key_num){
+	    if (ll_get_length(curr_node->prev->keys) - 1 >= min_key_num){
 		borrowed_from_left = true;
 
 		printf("debub : borrowing from the left node\n"
@@ -976,7 +1028,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		    borrowed_child->parent = curr_node;
 		    ll_tail_insert(curr_node->children, borrowed_child);
 
-		    printf("debug : the new current node's key = %lu, new parent's index key = %lu\n",
+		    printf("debug : the new current node's key = %lu, the new parent's index key = %lu\n",
 			   (uintptr_t) middle_key, (uintptr_t) smallest_key);
 		}
 	    }
@@ -1047,6 +1099,9 @@ bpt_delete(bpt_tree *bpt, void *key){
     /* Remove the found key */
     if (found_same_key){
 	bpt_delete_internal(bpt, leaf_node, key);
+
+	/* Ensure that this delete doesn't break the b+ tree requirement */
+	assert(ll_get_length(leaf_node->keys) == ll_get_length(leaf_node->children));
 
 	return true;
     }else{

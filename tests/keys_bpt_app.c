@@ -64,11 +64,25 @@ loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
     }
 }
 
+/*
+ * Does this node has a valid relationship between key and value or
+ * indexes and children.
+ */
+static void
+test_node_validity(bpt_node *node){
+    if (node->is_leaf)
+	assert(ll_get_length(node->keys) == ll_get_length(node->children));
+    else
+	assert(ll_get_length(node->keys) + 1 == ll_get_length(node->children));
+}
+
 /* Check only one node */
 static void
 one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     int i = 0;
     void *p;
+
+    test_node_validity(node);
 
     ll_begin_iter(node->keys);
     while ((p = ll_get_iter_data(node->keys)) != NULL){
@@ -93,6 +107,8 @@ full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     assert(node != NULL);
 
     while(true){
+	test_node_validity(node);
+
 	/* Check each key at the same level of node */
 	ll_begin_iter(node->keys);
 	while((p = (void *) ll_get_iter_data(node->keys)) != NULL){
@@ -676,16 +692,16 @@ remove_from_three_depth_tree(){
 	insertion[] = { 1, 4, 7, 10, 17, 19,
 			20, 21, 25, 28, 31, 42 },
 	/* Test data sets */
-	indexes0[] = { 20 },
-	indexes1[] = { 7, 17 },
-	indexes2[] = { 25, 31 },
-	indexes3[] = { 21, 31 },
-	indexes4[] = { 31, 42 },
-	indexes5[] = { 7 },
-	indexes6[] = { 20, 42 },
-	indexes7[] = { 7, 17 },
-	indexes8[] = { 42 },
-	indexes9[] = { 7, 17, 20 },
+	indexes0[]  = { 20 },
+	indexes1[]  = { 7, 17 },
+	indexes2[]  = { 25, 31 },
+	indexes3[]  = { 21, 31 },
+	indexes4[]  = { 31, 42 },
+	indexes5[]  = { 7 },
+	indexes6[]  = { 20, 42 },
+	indexes7[]  = { 7, 17 },
+	indexes8[]  = { 42 },
+	indexes9[]  = { 7, 17, 20 },
 	indexes10[] = { 9, 17, 20 },
 	indexes11[] = { 17, 19, 20 },
 	/* Check the leaves */
