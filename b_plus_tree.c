@@ -145,13 +145,16 @@ bpt_init(bpt_key_access_cb keys_key_access,
  *
  * When this function is called, the number of keys has been bigger than
  * the tree's 'max_keys'. This function splits the overwhelmed current
- * node and distributes its keys and children.
+ * node and distributes its keys and children. See the top assert().
  */
 static bpt_node *
 bpt_node_split(bpt_tree *bpt, bpt_node *curr_node){
     bpt_node *half;
     linked_list *left_keys, *left_children;
     int node_num = GET_SPLIT_NODE_NUM(bpt->max_keys);
+
+    /* Ensure that the keys have overflowed */
+    assert(bpt->max_keys + 1 == ll_get_length(curr_node->keys));
 
     /* Create an empty node with null keys and children */
     half = bpt_gen_node();
@@ -236,8 +239,8 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    ll_tail_insert(curr_node->children, new_child);
 	}else{
 	    /* Get a copied up key from lower node */
-	    printf("debug : (%p) curr_node->children[%d] = child\n",
-		   curr_node, new_child_index);
+	    printf("debug : insert a copied up key to curr_node->children[%d]\n",
+		   new_child_index);
 	    ll_asc_insert(curr_node->keys, new_key);
 	    ll_index_insert(curr_node->children, new_child, new_child_index);
 	}
@@ -254,9 +257,9 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 
 	/*
 	 * Add the new key and value (or child). This temporarily
-	 * make the number of keys larger than the tree's requirement.
+	 * make the number of keys larger than the b+ tree's constraints.
 	 * But bpt_node_split() called below keeps the tree's constraints
-	 * and balance.
+	 * and balance of the whole tree.
 	 */
 	ll_asc_insert(curr_node->keys, new_key);
 	if (curr_node->is_leaf == true)
@@ -289,10 +292,10 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    right_half->next->prev = right_half;
 
 	if (!curr_node->is_leaf){
-	    printf("debug : delete the copied up key from the internal node\n");
+	    /* Delete the copied up key from the right node */
+	    printf("debug : delete the copied up key = %lu from the right node\n",
+		   (uintptr_t) copied_up_key);
 	    (void) ll_remove_first_data(right_half->keys);
-	    printf("debug : removed internal node's key = %lu. left key num = %d\n",
-		   (uintptr_t) copied_up_key, ll_get_length(right_half->keys));
 
 	    /*
 	     * After split, all children still point to the left split node.
@@ -327,7 +330,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 
 	    ll_asc_insert(new_top->keys, copied_up_key);
 
-	    /* Arrage the order of children */
+	    /* Make the split nodes children for the new root */
 	    printf("debug : created a new root with key = %lu\n", (uintptr_t) copied_up_key);
 	    ll_tail_insert(new_top->children, curr_node);
 	    ll_tail_insert(new_top->children, right_half);
