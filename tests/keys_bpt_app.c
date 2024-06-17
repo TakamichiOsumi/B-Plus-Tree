@@ -65,8 +65,8 @@ loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
 }
 
 /*
- * Does this node has a valid relationship between key and value or
- * indexes and children.
+ * Does this node have a valid relationship between key and value or
+ * between indexes and children.
  */
 static void
 test_node_validity(bpt_node *node){
