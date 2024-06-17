@@ -548,10 +548,10 @@ remove_from_one_root(void){
 		    employee_key_compare,
 		    employee_free, 5);
 
-    assert(bpt_insert(tree, (void *) 1, &emp) == true);
-    assert(bpt_insert(tree, (void *) 2, &emp) == true);
-    assert(bpt_insert(tree, (void *) 3, &emp) == true);
-    assert(bpt_insert(tree, (void *) 4, &emp) == true);
+    assert(bpt_insert(tree, (void *) 1, (void *) &emp) == true);
+    assert(bpt_insert(tree, (void *) 2, (void *) &emp) == true);
+    assert(bpt_insert(tree, (void *) 3, (void *) &emp) == true);
+    assert(bpt_insert(tree, (void *) 4, (void *) &emp) == true);
 
     /* Set up only one root node */
     assert(tree->root->is_root == true);

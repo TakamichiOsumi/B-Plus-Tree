@@ -241,8 +241,9 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
     if (ll_get_length(curr_node->keys) < bpt->max_keys){
 	if (curr_node->is_leaf){
 	    printf("debug : add key = %lu to node (%p)\n", (uintptr_t) new_key, curr_node);
+	    /* Store the pair of key and record */
 	    ll_asc_insert(curr_node->keys, new_key);
-	    ll_tail_insert(curr_node->children, new_child);
+	    ll_tail_insert(curr_node->children, new_value);
 	}else{
 	    /* Get a copied up key from lower node */
 	    printf("debug : insert a copied up key to curr_node->children[%d]\n",
@@ -706,7 +707,7 @@ bpt_free_node(bpt_node *node){
  */
 static void *
 bpt_delete_key_value_from_leaf(bpt_node *leaf, void *removed_key){
-    void *key;
+    void *key, *record;
     int delete_index = 0;
 
     assert(leaf->is_leaf == true);
@@ -725,7 +726,9 @@ bpt_delete_key_value_from_leaf(bpt_node *leaf, void *removed_key){
     /* Discard the apparent removed key */
     (void) ll_index_remove(leaf->keys, delete_index);
 
-    return ll_index_remove(leaf->children, delete_index);
+    assert((record = ll_index_remove(leaf->children, delete_index)) != NULL);
+
+    return record;
 }
 
 static void
