@@ -256,11 +256,9 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	copied_up_key = bpt_get_copied_up_key(right_half->keys);
 
 	/*
-	 * Connect split nodes at the same depth.
-	 *
-	 * When there is other node on the right side of 'right_half', make
-	 * its 'prev' point to the 'right_half'. Skip if the 'right_half' is
-	 * the rightmost node.
+	 * Connect split nodes at the same depth. When there is other node
+	 * on the right side of 'right_half', make its 'prev' point to the
+	 * 'right_half'. Skip if the 'right_half' is the rightmost node.
 	 */
 	right_half->prev = curr_node;
 	right_half->next = curr_node->next;
@@ -311,8 +309,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    ll_asc_insert(new_top->keys, copied_up_key);
 
 	    /* Arrage the order of children */
-	    printf("Created a new root with key = %lu\n",
-		   (uintptr_t) copied_up_key);
+	    printf("Created a new root with key = %lu\n", (uintptr_t) copied_up_key);
 	    ll_tail_insert(new_top->children, curr_node);
 	    ll_tail_insert(new_top->children, right_half);
 

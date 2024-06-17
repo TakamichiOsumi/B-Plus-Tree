@@ -136,6 +136,12 @@ reverse_full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     }
 }
 
+/*
+ * All tests in this file just focus on the key and index management
+ * and doesn't take care of record management. Therefore, just have
+ * one data for the whole tests and let other tests handle the record
+ * management.
+ */
 static employee emp = { 1, "dummy" };
 
 static void
