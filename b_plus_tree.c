@@ -27,17 +27,23 @@ bpt_malloc(size_t size){
     return p;
 }
 
+/* Dump one list with its length */
 static void
-bpt_dump_list(linked_list *list){
+bpt_dump_list(char *prefix, linked_list *list){
     void *p;
+
+    printf("debug : %s", prefix);
+    printf("debug : list length = %d\n",
+	   ll_get_length(list));
 
     ll_begin_iter(list);
     while((p = ll_get_iter_data(list)) != NULL){
-	printf("debug : \t dump : %lu\n", (uintptr_t) p);
+	printf("debug : \t%lu\n", (uintptr_t) p);
     }
     ll_end_iter(list);
 }
 
+/* Dump internal node's children */
 static void
 bpt_dump_children_keys(bpt_node *curr_node){
     bpt_node *child;
@@ -182,8 +188,8 @@ bpt_node_split(bpt_tree *bpt, bpt_node *curr_node){
     half->parent = curr_node->parent;
 
     /*
-     * Swap the two nodes to return the right half. At this moment,
-     * the 'half' node has left part of keys and children.
+     * Swap the two nodes to return the right half. At this moment, the 'half'
+     * node has left part of keys and children.
      */
     left_keys = half->keys;
     left_children = half->children;
@@ -197,6 +203,7 @@ bpt_node_split(bpt_tree *bpt, bpt_node *curr_node){
     return half;
 }
 
+/* Return the first data reference from passed keys */
 static void *
 bpt_get_copied_up_key(linked_list *keys){
     void *first_key;
@@ -240,8 +247,9 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
     /* Does this node have room to store a new key ? */
     if (ll_get_length(curr_node->keys) < bpt->max_keys){
 	if (curr_node->is_leaf){
-	    printf("debug : add key = %lu to node (%p)\n", (uintptr_t) new_key, curr_node);
 	    /* Store the pair of key and record */
+	    printf("debug : add key = %lu to node (%p)\n",
+		   (uintptr_t) new_key, curr_node);
 	    ll_asc_insert(curr_node->keys, new_key);
 	    ll_tail_insert(curr_node->children, new_value);
 	}else{
@@ -260,7 +268,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	bpt_node *right_half, *child;
 	void *copied_up_key = NULL;
 
-	printf("debug : split for %lu\n", (uintptr_t) new_key);
+	printf("debug : split triggered by %lu\n", (uintptr_t) new_key);
 
 	/*
 	 * Add the new key and value (or child). This temporarily
@@ -277,12 +285,10 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	/* Split keys and children */
 	right_half = bpt_node_split(bpt, curr_node);
 
-	printf("debug : left (%d len : %p) => \n", ll_get_length(curr_node->keys),
-	       curr_node);
-	bpt_dump_list(curr_node->keys);
-	printf("debug : right (%d len : %p) => \n", ll_get_length(right_half->keys),
-	       right_half);
-	bpt_dump_list(right_half->keys);
+	bpt_dump_list("dump info about the split left node",
+		      curr_node->keys);
+	bpt_dump_list("dump info about the split right node",
+		      right_half->keys);
 
 	/* Get the key that will go up and/or will be deleted */
 	copied_up_key = bpt_get_copied_up_key(right_half->keys);
@@ -971,10 +977,10 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		    assert(ll_remove_by_key(curr_node->parent->keys, middle_key) != NULL);
 		    ll_asc_insert(curr_node->parent->keys, largest_key);
 
-		    printf("debug : [from] left internal node's children :\n");
-		    bpt_dump_list(curr_node->prev->keys);
-		    printf("debug : [to] right internal nodes's children :\n");
-		    bpt_dump_list(curr_node->keys);
+		    bpt_dump_list("from left internal node's children",
+				  curr_node->prev->keys);
+		    bpt_dump_list("to right internal node's children",
+				  curr_node->keys);
 
 		    /* Whenever we borrow an internal node's child, update its attributes */
 		    assert((borrowed_child = (bpt_node *) ll_tail_remove(curr_node->prev->children)) != NULL);
@@ -1021,10 +1027,10 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		    assert(ll_remove_by_key(curr_node->parent->keys, middle_key) != NULL);
 		    ll_asc_insert(curr_node->parent->keys, smallest_key);
 
-		    printf("debug : [from] right internal node's children :\n");
-		    bpt_dump_list(curr_node->next->keys);
-		    printf("debug : [to] left internal nodes's children :\n");
-		    bpt_dump_list(curr_node->keys);
+		    bpt_dump_list("from right internal node's children",
+				  curr_node->next->keys);
+		    bpt_dump_list("to left internal node's children",
+				  curr_node->keys);
 
 		    /* Whenever we borrow an internal node's child, update its attributes */
 		    assert((borrowed_child = (bpt_node *) ll_remove_first_data(curr_node->next->children)) != NULL);
