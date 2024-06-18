@@ -43,14 +43,16 @@ bpt_dump_list(char *prefix, linked_list *list){
     ll_end_iter(list);
 }
 
-/* Dump internal node's children */
+/* Dump internal node's children. Don't dump records */
 static void
-bpt_dump_children_keys(bpt_node *curr_node){
+bpt_dump_children_keys(char *prefix, bpt_node *curr_node){
     bpt_node *child;
     void *key;
 
     if (curr_node->is_leaf)
 	return;
+
+    printf("debug : %s", prefix);
 
     ll_begin_iter(curr_node->children);
     while((child = (bpt_node *) ll_get_iter_data(curr_node->children)) != NULL){
@@ -321,11 +323,10 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    ll_end_iter(right_half->children);
 
 	    /* Use the utility for debug */
-	    printf("debug : after split, dump children's keys\n");
-	    printf("debug : left internal node's children :\n");
-	    bpt_dump_children_keys(curr_node);
-	    printf("debug : right internal node's children :\n");
-	    bpt_dump_children_keys(right_half);
+	    bpt_dump_children_keys("dump the left internal node's children after the split:\n",
+				   curr_node);
+	    bpt_dump_children_keys("dump the right internal node's children after the split:\n",
+				   right_half);
 	}
 
 	if (!curr_node->parent){
