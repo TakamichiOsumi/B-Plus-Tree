@@ -345,10 +345,10 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    ll_asc_insert(new_top->keys, copied_up_key);
 
 	    /* Make the split nodes children for the new root */
-	    printf("debug : created a new root with key = %lu\n", (uintptr_t) copied_up_key);
+	    printf("debug : created a new root with key = %lu\n",
+		   (uintptr_t) copied_up_key);
 	    ll_tail_insert(new_top->children, curr_node);
 	    ll_tail_insert(new_top->children, right_half);
-
 	}else{
 	    /*
 	     * Propagate the key insertion to the upper node. Notify the
@@ -403,8 +403,7 @@ bpt_ref_index_child(bpt_node *curr_node, int index){
 static bool
 bpt_search_internal(bpt_node *curr_node, void *new_key, bpt_node **leaf_node){
     linked_list *keys;
-    void *existing_key;
-    int iter, diff, children_index;
+    int diff, children_index;
 
     printf("debug : bpt_search() for key = %lu in node '%p'\n",
 	   (uintptr_t) new_key, curr_node);
@@ -413,24 +412,24 @@ bpt_search_internal(bpt_node *curr_node, void *new_key, bpt_node **leaf_node){
     *leaf_node = curr_node;
 
     /*
-     * Iterate each bpt's key and compare it with the new key.
-     * Search for an exact match or find the first smaller value than
-     * the new key user indicated. The latter means we can insert
-     * the 'new_key' before the larger existing key.
+     * Iterate each bpt's key and compare it with the new key. Break
+     * if we could search for an exact match or find the first larger
+     * value than the new key user indicated.
+     *
+     * In the latter case, the current index is the one to select the
+     * next child to pick up.
+     *
+     * When we couldn't find any larger values in the keys, then go down
+     * to the rightmost child for search.
      */
-    children_index = 0;
     keys = curr_node->keys;
 
     ll_begin_iter(keys);
-    for (iter = 0; iter < ll_get_length(keys); iter++){
-	existing_key = ll_get_iter_data(keys);
-
-	diff = keys->key_compare_cb(keys->key_access_cb(existing_key),
+    for (children_index = 0; children_index < ll_get_length(keys); children_index++){
+	diff = keys->key_compare_cb(keys->key_access_cb(ll_get_iter_data(keys)),
 				    keys->key_access_cb(new_key));
 	if (diff == 0 || diff == 1)
 	    break;
-
-	children_index++;
     }
     ll_end_iter(keys);
 
@@ -446,7 +445,11 @@ bpt_search_internal(bpt_node *curr_node, void *new_key, bpt_node **leaf_node){
 				       new_key, leaf_node);
 	}
     }else if (diff == 1){
-	/* Found larger key value than the 'new_key' */
+	/*
+	 * Found larger key value than the 'new_key'. The next child for search is
+	 * the one whose index is children_index. This child's subtree should contain
+	 * values smaller than the 'new_key' only. Therefore, this is a valid choice.
+	 */
 	if (curr_node->is_leaf)
 	    return false;
 	else{
