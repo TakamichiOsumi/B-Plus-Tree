@@ -304,6 +304,8 @@ search_three_depth_nodes_test(void){
     right_internal->is_leaf = false;
     right_internal->parent = tree->root;
 
+    left_internal->next = right_internal;
+
     /* Leftmost leaf node */
     leftmost = bpt_gen_root_callbacks_node(tree);
     ll_asc_insert(leftmost->keys, (void *) 1);
@@ -397,6 +399,8 @@ search_three_depth_nodes_test(void){
     node = NULL;
     assert(bpt_search(tree, (void *) 30, &node) == false);
     assert(node == rightmost);
+
+    bpt_dump_whole_tree(tree);
 }
 
 static void
@@ -493,7 +497,7 @@ insert_and_create_three_depth_tree(void){
 }
 
 static void
-test_even_number_max_children(void){
+test_even_number_max_keys(void){
     bpt_tree *tree;
     bpt_node *node;
     uintptr_t answer = 1,
@@ -879,6 +883,42 @@ remove_from_three_depth_tree(){
 }
 
 static void
+keys_test_more_data(void){
+    bpt_tree *tree;
+    bpt_node *node;
+    uintptr_t i, j, max = 32;
+
+    tree = bpt_init(employee_key_access,
+		    employee_key_compare,
+		    employee_free,
+		    employee_key_access_from_employee,
+		    employee_key_compare,
+		    employee_free, 3);
+
+    for (i = 1; i < max; i++){
+	printf("debug : app inserts key = %lu\n", i);
+	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
+    }
+
+    for (i = max - 1; i >= 1; i--){
+	printf("debug : app searches key = %lu\n", i);
+	assert(bpt_search(tree, (void *) 1, &node) == true);
+    }
+
+    for (i = 1; i < max; i++){
+	printf("debug : app deletes key = %lu\n", i);
+	assert(bpt_delete(tree, (void *) i) == true);
+	/* Detect any incorrect tree structure */
+	for (j = i + 1; j < max; j++){
+	    printf("internal : app searches key = %lu\n", j);
+	    printf("internal : dump current tree\n");
+	    bpt_dump_whole_tree(tree);
+	    assert(bpt_search(tree, (void *) j, &node) == true);
+	}
+    }
+}
+
+static void
 keys_test_bpt_search(void){
     printf("<Search key test from single node>\n");
     search_single_node_test();
@@ -899,7 +939,7 @@ keys_test_bpt_insert(void){
     insert_and_create_three_depth_tree();
 
     printf("<Other variant of depth 3 tree>\n");
-    test_even_number_max_children();
+    test_even_number_max_keys();
 }
 
 static void
@@ -914,14 +954,21 @@ keys_test_bpt_remove(void){
     remove_from_three_depth_tree();
 }
 
+static void
+keys_test_combined(){
+    printf("<Insert and remove larger number of keys>");
+    /* keys_test_more_data(); */
+}
+
 int
 main(int argc, char **argv){
 
     printf("Perform the tests for key search, insert and delete...\n");
-
     keys_test_bpt_search();
+
     keys_test_bpt_insert();
     keys_test_bpt_remove();
+    keys_test_combined();
 
     printf("All tests are done gracefully\n");
 

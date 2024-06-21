@@ -78,6 +78,7 @@ typedef struct bpt_tree {
 
 } bpt_tree;
 
+void bpt_dump_whole_tree(bpt_tree *bpt);
 bpt_node *bpt_gen_node(void);
 bpt_node *bpt_gen_root_callbacks_node(bpt_tree *bpt);
 bpt_tree *bpt_init(bpt_key_access_cb keys_key_access,

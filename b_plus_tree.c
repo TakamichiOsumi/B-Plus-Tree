@@ -15,6 +15,46 @@
 #define GET_SPLIT_NODE_NUM(max_keys) \
     ((max_keys % 2 == 0) ? (max_keys / 2) : ((max_keys / 2) + 1))
 
+void
+bpt_dump_whole_tree(bpt_tree *bpt){
+    bpt_node *leftmost, *curr;
+    int i;
+
+    if (bpt == NULL || bpt->root == NULL)
+	return;
+
+    curr = bpt->root;
+
+    while(curr != NULL){
+	/* Remember the first lower depth node */
+	if (curr->is_leaf == true)
+	    leftmost = NULL;
+	else
+	    leftmost = (bpt_node *) ll_ref_index_data(curr->children, 0);
+
+	/* Dump the keys of all vertical nodes */
+	while(true){
+	    printf("[");
+	    ll_begin_iter(curr->keys);
+	    for (i = 0; i < ll_get_length(curr->keys); i++){
+		printf("%lu, ",
+		       (uintptr_t) ll_get_iter_data(curr->keys));
+		/* TODO : show each record */
+	    }
+	    ll_end_iter(curr->keys);
+	    printf("]");
+
+	    curr = curr->next;
+	    if (curr == NULL)
+		break;
+	}
+
+	/* Iterate the children */
+	curr = leftmost;
+	printf("\n");
+    }
+}
+
 static void*
 bpt_malloc(size_t size){
     void *p;
@@ -542,7 +582,6 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     if (with_right){
 	/* Merge keys */
 	merged_keys = ll_merge(curr_node->keys, curr_node->next->keys);
-
 	/* Merge children of current node with the ones of the next node */
 	while(ll_get_length(curr_node->next->children) > 0){
 	    curr_child = (bpt_node *) ll_remove_first_data(curr_node->next->children);
@@ -557,7 +596,6 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     }else{
 	/* Merge keys */
 	merged_keys = ll_merge(curr_node->prev->keys, curr_node->keys);
-
 	/* Merge children of the prev node and ones of curr_node */
 	while(ll_get_length(curr_node->children) > 0){
 	    curr_child = (bpt_node *) ll_remove_first_data(curr_node->children);
@@ -580,7 +618,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 
 	if (with_right && curr_child == curr_node){
 	    /* Remove the next node of the current node */
-	    printf("debug : found the curr_node to merge with right child\n");
+	    printf("debug : found the current node to merge with right child\n");
 	    removed_child = curr_child->next;
 	    if (curr_node->next->next)
 		curr_node->next->next->prev = curr_node;
@@ -588,7 +626,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	    break;
 	}else if (!with_right && curr_child == curr_node->prev){
 	    /* Remove the current node */
-	    printf("debug : found the prev node to merge with the current node\n");
+	    printf("debug : found the previous node to merge with the current node\n");
 	    removed_child = curr_node;
 	    if (curr_node->next)
 		curr_node->next->prev = curr_node->prev;
@@ -622,7 +660,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     /*
      * Check two conditions for debug.
      *
-     * (1) The removed child must have zero keys and children.
+     * (1) The removed child must have no left keys and children.
      * (2) The parent must delete the pointer to this removed child.
      */
     assert(ll_get_length(removed_child->keys) == 0);
@@ -969,6 +1007,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 		    /* Update the parent's index */
 		    bpt_replace_index(curr_node, false);
+		    /* Continue to update the indexes. Go up by recursive call */
+		    if (!curr_node->is_root)
+			bpt_delete_internal(bpt, curr_node->parent, removed_key);
+
+		    return;
 		}else{
 		    void *middle_key, *largest_key;
 		    bpt_node *borrowed_child;
@@ -1025,6 +1068,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 		    /* Update the parent's index */
 		    bpt_replace_index(curr_node, true);
+		    /* Continue to update the indexes. Go up by recursive call */
+		    if (!curr_node->is_root)
+			bpt_delete_internal(bpt, curr_node->parent, removed_key);
+		    return;
+
 		}else{
 		    void *middle_key, *smallest_key;
 		    bpt_node *borrowed_child;
@@ -1120,6 +1168,10 @@ bpt_delete(bpt_tree *bpt, void *key){
 
     /* Remove the found key */
     if (found_same_key){
+
+	printf("*\n");
+	bpt_dump_whole_tree(bpt);
+	printf("*\n");
 
 	printf("debug : bpt_delete_internal with leaf node = %p\n", leaf_node);
 
