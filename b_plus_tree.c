@@ -6,6 +6,10 @@
 
 #include "b_plus_tree.h"
 
+#define KEY_LEN(n) (ll_get_length(n->keys))
+
+#define CHILDREN_LEN(n) (ll_get_length(n->children))
+
 #define HAVE_SAME_PARENT(n1, n2) \
     (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
 
@@ -36,7 +40,7 @@ bpt_dump_whole_tree(bpt_tree *bpt){
 	while(true){
 	    printf("[");
 	    ll_begin_iter(curr->keys);
-	    for (i = 0; i < ll_get_length(curr->keys); i++){
+	    for (i = 0; i < KEY_LEN(curr); i++){
 		printf("%lu, ",
 		       (uintptr_t) ll_get_iter_data(curr->keys));
 		/* TODO : show each record */
@@ -213,7 +217,7 @@ bpt_node_split(bpt_tree *bpt, bpt_node *curr_node){
     int node_num = GET_SPLIT_NODE_NUM(bpt->max_keys);
 
     /* Ensure that the keys have overflowed */
-    assert(bpt->max_keys + 1 == ll_get_length(curr_node->keys));
+    assert(bpt->max_keys + 1 == KEY_LEN(curr_node));
 
     /* Create an empty node with null keys and children */
     half = bpt_gen_node();
@@ -298,7 +302,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
      */
 
     /* Does this node have room to store a new key ? */
-    if (ll_get_length(curr_node->keys) < bpt->max_keys){
+    if (KEY_LEN(curr_node) < bpt->max_keys){
 	if (curr_node->is_leaf){
 	    /* Store the pair of key and record */
 	    printf("debug : add key = %lu to node (%p)\n",
@@ -412,7 +416,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr_node, void *new_key,
 	    int index = 0;
 
 	    ll_begin_iter(parent_children);
-	    for (; index < ll_get_length(parent_children); index++)
+	    for (; index < CHILDREN_LEN(curr_node->parent); index++)
 		if (curr_node == ll_get_iter_data(parent_children))
 		    break;
 	    ll_end_iter(parent_children);
@@ -473,7 +477,7 @@ bpt_search_internal(bpt_node *curr_node, void *new_key, bpt_node **leaf_node){
     keys = curr_node->keys;
 
     ll_begin_iter(keys);
-    for (children_index = 0; children_index < ll_get_length(keys); children_index++){
+    for (children_index = 0; children_index < KEY_LEN(curr_node); children_index++){
 	diff = keys->key_compare_cb(keys->key_access_cb(ll_get_iter_data(keys)),
 				    keys->key_access_cb(new_key));
 	if (diff == 0 || diff == 1)
@@ -512,7 +516,7 @@ bpt_search_internal(bpt_node *curr_node, void *new_key, bpt_node **leaf_node){
 	else{
 	    /* Search for the rightmost child */
 	    return bpt_search_internal(bpt_ref_index_child(curr_node,
-							   ll_get_length(curr_node->children) - 1),
+							   CHILDREN_LEN(curr_node) - 1),
 				       new_key, leaf_node);
 	}
     }
@@ -583,7 +587,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	/* Merge keys */
 	merged_keys = ll_merge(curr_node->keys, curr_node->next->keys);
 	/* Merge children of current node with the ones of the next node */
-	while(ll_get_length(curr_node->next->children) > 0){
+	while(CHILDREN_LEN(curr_node->next) > 0){
 	    curr_child = (bpt_node *) ll_remove_first_data(curr_node->next->children);
 	    /* If this node is an internal node, update the children's parents */
 	    if (!curr_node->is_leaf){
@@ -597,7 +601,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
 	/* Merge keys */
 	merged_keys = ll_merge(curr_node->prev->keys, curr_node->keys);
 	/* Merge children of the prev node and ones of curr_node */
-	while(ll_get_length(curr_node->children) > 0){
+	while(CHILDREN_LEN(curr_node) > 0){
 	    curr_child = (bpt_node *) ll_remove_first_data(curr_node->children);
 	    /* Update children parent member if necessary */
 	    if (!curr_node->is_leaf){
@@ -663,8 +667,8 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
      * (1) The removed child must have no left keys and children.
      * (2) The parent must delete the pointer to this removed child.
      */
-    assert(ll_get_length(removed_child->keys) == 0);
-    assert(ll_get_length(removed_child->children) == 0);
+    assert(KEY_LEN(removed_child) == 0);
+    assert(CHILDREN_LEN(removed_child) == 0);
 
     ll_begin_iter(curr_node->parent->children);
     while((curr_child = ll_get_iter_data(curr_node->parent->children)) != NULL){
@@ -674,7 +678,7 @@ bpt_merge_nodes(bpt_node *curr_node, bool with_right){
     ll_end_iter(curr_node->parent->children);
 
     printf("debug : this merge decrements the number of parent's keys to '%d'\n",
-	   ll_get_length(curr_node->parent->keys));
+	   KEY_LEN(curr_node->parent));
 
     /* Free the unnecessary merged child */
     bpt_free_node(removed_child);
@@ -791,7 +795,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	   curr_node,
 	   curr_node->is_root ? "root" : "non-root",
 	   curr_node->is_leaf ? "leaf" : "non-leaf",
-	   ll_get_length(curr_node->keys), ll_get_length(curr_node->children));
+	   KEY_LEN(curr_node), CHILDREN_LEN(curr_node));
 
     /*
      * Need a root promotion ?
@@ -801,7 +805,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
      * any bpt_node * children hits this path.
      */
     if (curr_node->is_root && !curr_node->is_leaf &&
-	ll_get_length(curr_node->children) == 1){
+	CHILDREN_LEN(curr_node) == 1){
 	bpt_node *child;
 
 	assert(curr_node->prev == NULL);
@@ -825,9 +829,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
     }
 
     /* The other form of root promotion, which shrinks tree's height by merge */
-    if (!curr_node->is_root &&
-	ll_get_length(curr_node->keys) == 0 &&
-	ll_get_length(curr_node->children) == 1){
+    if (!curr_node->is_root && KEY_LEN(curr_node) == 0 && CHILDREN_LEN(curr_node) == 1){
 	/*
 	 * The previous call of bpt_delete_internal() has merged the last two
 	 * children of this node and deleted one left index in between. We must
@@ -836,7 +838,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	 */
 	assert(curr_node->parent != NULL);
 	assert(curr_node->parent->is_root == true);
-	assert(ll_get_length(curr_node->parent->keys) == 1);
+	assert(KEY_LEN(curr_node->parent) == 1);
 
 	if (HAVE_SAME_PARENT(curr_node->prev, curr_node)){
 	    bpt_node *last_child;
@@ -911,7 +913,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
      * --------------------------------------
      */
 
-    if (ll_get_length(curr_node->keys) - 1 >= min_key_num){
+    if (KEY_LEN(curr_node) - 1 >= min_key_num){
 	if (curr_node->is_leaf){
 	    void *removed_record;
 
@@ -990,12 +992,12 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	if (HAVE_SAME_PARENT(curr_node, curr_node->prev)){
 	    assert(curr_node->parent != NULL);
 	    has_left_sibling = true;
-	    if (ll_get_length(curr_node->prev->keys) - 1 >= min_key_num){
+	    if (KEY_LEN(curr_node->prev) - 1 >= min_key_num){
 		borrowed_from_left = true;
 
 		printf("debub : borrowing from the left node\n"
 		       "debug : the number of current node's keys = %d\n",
-		       ll_get_length(curr_node->keys));
+		       KEY_LEN(curr_node));
 
 		if (curr_node->is_leaf){
 		    borrowed_key = ll_tail_remove(curr_node->prev->keys);
@@ -1050,12 +1052,12 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    assert(curr_node->parent != NULL);
 	    has_right_sibling = true;
 
-	    if (ll_get_length(curr_node->next->keys) - 1 >= min_key_num){
+	    if (KEY_LEN(curr_node->next) - 1 >= min_key_num){
 		borrowed_from_right = true;
 
 		printf("debug : borrowing from the right node\n"
 		       "debug : the number of current node's keys = %d\n",
-		       ll_get_length(curr_node->keys));
+		       KEY_LEN(curr_node));
 
 		if (curr_node->is_leaf){
 		    borrowed_key = ll_remove_first_data(curr_node->next->keys);
@@ -1128,7 +1130,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 		if (curr_node->prev->is_leaf == false &&
 		    curr_node->prev->parent->is_root == true &&
-		    ll_get_length(curr_node->prev->parent->keys) == 0){
+		    KEY_LEN(curr_node->prev->parent) == 0){
 		    ll_asc_insert(curr_node->prev->keys, deleted_key);
 		    printf("debug : conducted key migration for next root promotion = %lu\n",
 			   (uintptr_t) deleted_key);
@@ -1141,7 +1143,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 
 		if (curr_node->is_leaf == false &&
 		    curr_node->parent->is_root == true &&
-		    ll_get_length(curr_node->parent->keys) == 0){
+		    KEY_LEN(curr_node->parent) == 0){
 		    ll_asc_insert(curr_node->keys, deleted_key);
 		    printf("debug : conducted key migration for next root promotion = %lu\n",
 		       (uintptr_t) deleted_key);
