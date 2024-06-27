@@ -27,6 +27,11 @@
 #define GET_SPLIT_NODE_NUM(max_keys) \
     ((max_keys % 2 == 0) ? (max_keys / 2) : ((max_keys / 2) + 1))
 
+static bpt_node *
+bpt_ref_index_child(bpt_node *curr_node, int index){
+    return (bpt_node *) ll_ref_index_data(curr_node->children, index);
+}
+
 void
 bpt_dump_whole_tree(bpt_tree *bpt){
     bpt_node *leftmost, *curr;
@@ -39,7 +44,7 @@ bpt_dump_whole_tree(bpt_tree *bpt){
 
     while(curr != NULL){
 	/* Remember the leftmost node */
-	leftmost = curr->is_leaf == true ? NULL : (bpt_node *) ll_ref_index_data(curr->children, 0);
+	leftmost = curr->is_leaf == true ? NULL : bpt_ref_index_child(curr, 0);
 
 	/* Dump the keys of all vertical nodes */
 	while(true){
@@ -451,11 +456,6 @@ bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){
 
 	return true;
     }
-}
-
-static bpt_node *
-bpt_ref_index_child(bpt_node *curr_node, int index){
-    return (bpt_node *) ll_ref_index_data(curr_node->children, index);
 }
 
 static bool
@@ -983,8 +983,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 	    if (KEY_LEN(curr_node) == 0){
 		bpt_node *left, *right;
 
-		left = (bpt_node *) ll_ref_index_data(curr_node->children, 0);
-		right = (bpt_node *) ll_ref_index_data(curr_node->children, 1);
+		left = bpt_ref_index_child(curr_node, 0);
+		right = bpt_ref_index_child(curr_node, 1);
 
 		if (KEY_LEN(left) == 1){
 		    left->parent = left->next = NULL;
@@ -1063,6 +1063,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr_node, void *removed_key){
 		    borrowed_key = ll_tail_remove(curr_node->prev->keys);
 		    ll_insert(curr_node->keys, borrowed_key);
 		    ll_insert(curr_node->children, ll_tail_remove(curr_node->prev->children));
+
 		    printf("debug : borrowed the max key = %lu from the left sibling\n",
 			   (uintptr_t) borrowed_key);
 
