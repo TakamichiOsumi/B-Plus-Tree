@@ -32,6 +32,9 @@ bpt_ref_index_child(bpt_node *curr, int index){
     return (bpt_node *) ll_ref_index_data(curr->children, index);
 }
 
+/*
+ * Dump the entire tree keys from the top to the bottom.
+ */
 void
 bpt_dump_whole_tree(bpt_tree *bpt){
     bpt_node *leftmost, *curr;
@@ -1261,8 +1264,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 		 * (step1) Merge the nodes and remove the index = 8 in between.
 		 *
 		 *                [9, 13]
-		 *        [/]               [11]
-		 *   [8]            [9, 10]      [11,  12]
+		 *        [/]                [11]
+		 *   [8]             [9, 10]      [11,  12]
 		 *
 		 * (step2) Move right children to the leftmost node made by the merge.
 		 *
@@ -1327,7 +1330,8 @@ bpt_delete(bpt_tree *bpt, void *key){
     /* Remove the found key */
     if (found_same_key){
 
-	printf("before deletion\n");
+	printf("debug : the whole tree before deletion\n");
+
 	bpt_dump_whole_tree(bpt);
 
 	printf("debug : bpt_delete_internal with leaf node = %p\n", leaf_node);
