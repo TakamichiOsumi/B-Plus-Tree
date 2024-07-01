@@ -870,10 +870,11 @@ keys_test_more_data(void){
     for (i = 1; i < max; i++){
 	printf("debug : app deletes key = %lu\n", i);
 	assert(bpt_delete(tree, (void *) i) == true);
-	/* Detect any incorrect tree structure */
+	/* Detect any incorrect tree structure immediately */
 	for (j = i + 1; j < max; j++)
 	    assert(bpt_search(tree, (void *) j, &node) == true);
 	printf("debug : proved the tree has the valid searchability\n");
+	bpt_dump_whole_tree(tree);
     }
 
     assert(ll_get_length(tree->root->keys) == 0);
@@ -889,7 +890,7 @@ keys_test_more_data(void){
     for (i = max; i >= 1; i--){
 	printf("debug : app deletes key = %lu\n", i);
 	assert(bpt_delete(tree, (void *) i) == true);
-	/* Detect any incorrect tree structure */
+	/* Detect any incorrect tree structure immediately */
 	for (j = i - 1; j >= 1; j--)
 	    assert(bpt_search(tree, (void *) j, &node) == true);
 	printf("debug : proved the tree has the valid searchability\n");

@@ -10,6 +10,10 @@
 #define HAVE_SAME_PARENT(n1, n2)				\
     (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
 
+/* Written as if this is a function for readability */
+#define bpt_ref_index_child(curr, index)			\
+    ((bpt_node *) ll_ref_index_data(curr->children, index))
+
 /* Macros for key */
 #define KEY_LEN(n) (ll_get_length(n->keys))
 
@@ -23,9 +27,6 @@
     ((max_keys % 2 == 0) ? (max_keys / 2) : (max_keys / 2 + 1))
 
 #define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
-
-#define bpt_ref_index_child(curr, index)	\
-    ((bpt_node *) ll_ref_index_data(curr->children, index))
 
 /*
  * Dump the entire tree keys from the top to the bottom.
@@ -55,7 +56,7 @@ bpt_dump_whole_tree(bpt_tree *bpt){
 	    }
 	    ll_end_iter(curr->keys);
 	    printf("] ");
-	    /* printf("] (%p) ", curr); */
+	    /* printf("] (%p) ", curr); */ /* verbose */
 
 	    curr = curr->next;
 	    if (curr == NULL)
@@ -973,7 +974,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
     /*
      * --------------------------------------
-     * Main parts of deletion start from here
+     * The main part of deletion process
      * --------------------------------------
      */
 
@@ -1009,11 +1010,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
     }
 
     /*
-     * We are done with key deletion of this node.
+     * We are done with key deletion of this node. Keep the b+ tree property.
      */
 
     if (KEY_LEN(curr) >= min_key_num){
-	/* The current node has sufficient keys. Just Go up if possible */
+	/* The current node has sufficient keys. Go up if possible */
 	if (!curr->is_root)
 	    bpt_delete_internal(bpt, curr->parent, removed_key);
 
