@@ -828,7 +828,7 @@ remove_from_three_depth_tree(){
     bpt_search(tree, (void *) 17, &node);
     assert(ll_get_length(node->keys) == 2);
 
-    /* This should trigger a borrowing from right child */
+    /* Trigger a borrowing from right child */
     assert(bpt_delete(tree, (void *) 9) == true);
 
     assert(bpt_delete(tree, (void *) 17) == true);
@@ -877,6 +877,8 @@ keys_test_more_data(void){
     }
 
     assert(ll_get_length(tree->root->keys) == 0);
+    assert(tree->root->is_leaf == true);
+    assert(tree->root->is_root == true);
 
     /*
      * Do the same thing in reverse order.
@@ -892,6 +894,10 @@ keys_test_more_data(void){
 	    assert(bpt_search(tree, (void *) j, &node) == true);
 	printf("debug : proved the tree has the valid searchability\n");
     }
+
+    assert(ll_get_length(tree->root->keys) == 0);
+    assert(tree->root->is_leaf == true);
+    assert(tree->root->is_root == true);
 }
 
 static void
