@@ -469,7 +469,7 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
     printf("debug : bpt_search() for key = %lu in node '%p'\n",
 	   (uintptr_t) new_key, curr);
 
-    /* Set the last searched node. This search can be last */
+    /* Set the last searched node first. This call can be last */
     *leaf_node = curr;
 
     /*
@@ -811,10 +811,9 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
      *
      * If this is a leaf node, skip this condition block. Otherwise,
      * deleting one key (and its record) from one root node without
-     * any bpt_node * children hits this path.
+     * any bpt_node * children hits this path wrongly.
      */
-    if (curr->is_root && !curr->is_leaf &&
-	CHILDREN_LEN(curr) == 1){
+    if (curr->is_root && !curr->is_leaf && CHILDREN_LEN(curr) == 1){
 	bpt_node *child;
 
 	assert(curr->prev == NULL);
@@ -822,14 +821,15 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 	child = ll_remove_first_data(curr->children);
 
+	/* No left children */
+	assert(CHILDREN_LEN(curr) == 0);
+
 	/* Reconnect nodes */
 	child->is_root = true;
 	child->parent = NULL;
 	bpt->root = child;
 
-	/*
-	 * Free the unnecessary node.
-	 */
+	/* Free the unnecessary node */
 	bpt_free_node(curr);
 
 	printf("debug : completed root promotion\n");
@@ -837,29 +837,39 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	return;
     }
 
-    /* The other form of root promotion, which shrinks tree's height by merge */
-    if (curr->parent && curr->parent->is_root &&
-	KEY_LEN(curr->parent) == 1 && KEY_LEN(curr) == 0 &&
-	CHILDREN_LEN(curr) == 1){
+    /*
+     * Another form of root promotion.
+     *
+     * This shrinks tree's height by merge. The current node has no key and
+     * it is the last child for the parent.
+     */
+    if (curr->parent && curr->parent->is_root && KEY_LEN(curr->parent) == 1 &&
+	KEY_LEN(curr) == 0 && CHILDREN_LEN(curr) == 1){
 	/*
 	 * The previous call of bpt_delete_internal() has merged the last two
-	 * children of this node and deleted one left index in between. We must
-	 * ensure that we don't have any keys left in this node and that in this
-	 * scenario, we have a parent that stores one key.
+	 * children of the current node and deleted one last index in this node.
 	 */
-	assert(curr->parent != NULL);
-	assert(curr->parent->is_root == true);
-
 	if (HAVE_SAME_PARENT(curr->prev, curr)){
 	    bpt_node *child;
 	    void *min_key;
 
 	    /*
 	     * Move the current node's children to the previous node.
+	     *
 	     * Meanwhile, it's possible that the parent's key can't be
-	     * used as is. In such cases, obtain the minimum value from
-	     * the right child and utilize it as the key value added to
-	     * the previous node. This ensures indexes are stored correctly.
+	     * used as is, for a previous node key.
+	     *
+	     * Suppose the previous call of bpt_delete_internal()
+	     * deleted the right child key of this node. This means
+	     * the parent's key won't exist any more on the right
+	     * subtree and writing the parent's key in the previous
+	     * node causes a wrong key insertion.
+	     *
+	     * In this case, obtain the minimum value from the left child
+	     * again and utilize it as the key value added to the previous
+	     * node.
+	     *
+	     * This ensures indexes are stored correctly.
 	     */
 	    child = (bpt_node *) ll_remove_first_data(curr->children);
 	    min_key = bpt_ref_subtree_minimum_key(child);
@@ -873,9 +883,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	     */
 	    while(CHILDREN_LEN(curr) > 0){
 		child = (bpt_node *) ll_remove_first_data(curr->children);
-		if (!curr->is_leaf){
+		if (!curr->is_leaf)
 		    child->parent = curr->prev;
-		}
 		ll_tail_insert(curr->prev->children, child);
 	    }
 
@@ -912,8 +921,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	    ll_asc_insert(curr->next->keys, key);
 
 	    /*
-	     * If there are some children below the current node,
-	     * make them point to the next node as parent.
+	     * If there are some children below the current node, make them
+	     * point to the next node as parent.
 	     */
 	    while(CHILDREN_LEN(curr) > 0){
 		child = (bpt_node *) ll_remove_first_data(curr->children);
