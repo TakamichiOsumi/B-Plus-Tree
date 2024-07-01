@@ -49,7 +49,7 @@ bpt_dump_whole_tree(bpt_tree *bpt){
 	/* Remember the leftmost node */
 	leftmost = curr->is_leaf == true ? NULL : bpt_ref_index_child(curr, 0);
 
-	/* Dump the keys of all vertical nodes */
+	/* Dump keys of all vertical nodes */
 	while(true){
 	    printf("[");
 	    ll_begin_iter(curr->keys);
@@ -1334,11 +1334,6 @@ bpt_delete(bpt_tree *bpt, void *key){
 
     /* Remove the found key */
     if (found_same_key){
-
-	printf("debug : the whole tree before deletion\n");
-
-	bpt_dump_whole_tree(bpt);
-
 	printf("debug : bpt_delete_internal with leaf node = %p\n", leaf_node);
 
 	bpt_delete_internal(bpt, leaf_node, key);
