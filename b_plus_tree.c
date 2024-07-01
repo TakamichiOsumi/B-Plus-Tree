@@ -992,7 +992,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
     }else{
 	/*
 	 * This internal node might or might not have the index.
-	 * If the index contains the key, then remove and replace
+	 * If the indexes contains the key, then remove and replace
 	 * it with its right child's minimum key.
 	 */
 	if (ll_has_key(curr->keys, removed_key)){
