@@ -641,11 +641,11 @@ remove_from_two_depth_tree(void){
     full_keys_comparison_test(node->parent, indexes1);
 
     /*
-     * Another Removal. Many things happen by this removal.
+     * Another Removal. Many things happen by this.
      *
      * (1) Borrow one key from the right child.
      *
-     * (2) With the 1st step, update the index for the right node.
+     * (2) Along with the 1st step, update the index for the right node.
      *     This maintains the tree's key and children relationship among
      *     the middle node and the right node and parent node's key.
      *     The index key = 5 must be replaced by 6, the minimum value
