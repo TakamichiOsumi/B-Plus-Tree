@@ -2,7 +2,7 @@
 
 Making a submodule for my other repository.
 
-# How to build and test
+## How to build and test
 
 ```
 % git clone https://github.com/TakamichiOsumi/B-Plus-Tree.git

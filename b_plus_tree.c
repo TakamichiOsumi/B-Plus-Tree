@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "Linked-List/linked_list.h"
-
 #include "b_plus_tree.h"
 
 /* Macros for b+ tree node */
@@ -27,6 +26,24 @@
     ((max_keys % 2 == 0) ? (max_keys / 2) : (max_keys / 2 + 1))
 
 #define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
+
+
+/*
+ * Check if the input node satisfies either valid condition below.
+ *
+ * (1) Have the same numbers of keys and values if it's a leaf node
+ * or
+ * (2) Have one more indexes than children if it's a internal node
+ *
+ * Insert this function for tests.
+ */
+void
+bpt_node_validity(bpt_node *node){
+    if (node->is_leaf)
+	assert(ll_get_length(node->keys) == ll_get_length(node->children));
+    else
+	assert(ll_get_length(node->keys) + 1 == ll_get_length(node->children));
+}
 
 /*
  * Dump the entire tree keys from the top to the bottom.
@@ -1217,5 +1234,37 @@ bpt_delete(bpt_tree *bpt, void *key){
     }
 }
 
+/* Free the entire tree from the root to the bottom */
 void
-bpt_destroy(bpt_tree *bpt){}
+bpt_destroy(bpt_tree *bpt){
+    bpt_node *leftmost, *prev, *curr;
+
+    if (bpt == NULL)
+	return;
+
+    if (bpt->root == NULL){
+	free(bpt);
+	return;
+    }
+
+    prev = curr = bpt->root;
+
+    while(curr != NULL){
+	/* Remember the leftmost node */
+	leftmost = curr->is_leaf == true ? NULL : bpt_ref_index_child(curr, 0);
+
+	/* Free nodes vertically */
+	while(true){
+	    prev = curr;
+	    curr = curr->next;
+	    bpt_free_node(prev);
+	    if (curr == NULL)
+		break;
+	}
+
+	/* Iterate the children */
+	curr = leftmost;
+    }
+
+    free(bpt);
+}

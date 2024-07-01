@@ -64,28 +64,13 @@ loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
     }
 }
 
-/*
- * Check if the input node satisfies either valid condition below
- *
- * (1) Have the same numbers of keys and values if it's a leaf node
- * or
- * (2) Have one more indexes than children if it's a internal node
- */
-static void
-test_node_validity(bpt_node *node){
-    if (node->is_leaf)
-	assert(ll_get_length(node->keys) == ll_get_length(node->children));
-    else
-	assert(ll_get_length(node->keys) + 1 == ll_get_length(node->children));
-}
-
 /* Check only one node */
 static void
 one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     int i = 0;
     void *p;
 
-    test_node_validity(node);
+    bpt_node_validity(node);
 
     ll_begin_iter(node->keys);
     while ((p = ll_get_iter_data(node->keys)) != NULL){
@@ -110,7 +95,7 @@ full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     assert(node != NULL);
 
     while(true){
-	test_node_validity(node);
+	bpt_node_validity(node);
 
 	/* Check each key at the same level of node */
 	ll_begin_iter(node->keys);
@@ -204,6 +189,9 @@ search_single_node_test(void){
     node = NULL;
     assert(bpt_search(tree, (void *) 5, &node) == false);
     assert(node == tree->root);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -267,6 +255,9 @@ search_two_depth_nodes_test(void){
     node = NULL;
     assert(bpt_search(tree, (void *) 7, &node) == false);
     assert(node == right);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -404,6 +395,9 @@ search_three_depth_nodes_test(void){
     assert(node == rightmost);
 
     bpt_dump_whole_tree(tree);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -440,6 +434,9 @@ insert_and_create_two_depth_tree(void){
     /* Check parent/children relationship too */
     assert(ll_ref_index_data(tree->root->children, 0) == left);
     assert(ll_ref_index_data(tree->root->children, 1) == right);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -497,6 +494,9 @@ insert_and_create_three_depth_tree(void){
     node = NULL;
     assert(bpt_search(tree, (void *) 12, &node) == true);
     assert(node != NULL);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -540,6 +540,9 @@ test_even_number_max_keys(void){
 
     /* Check the doubly linked list of leaf nodes */
     reverse_full_keys_comparison_test(node, reversed);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -578,6 +581,9 @@ remove_from_one_root(void){
     assert(ll_get_length(tree->root->keys) == 2);
 
     full_keys_comparison_test(tree->root, answers2);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -688,6 +694,9 @@ remove_from_two_depth_tree(void){
     assert(bpt_delete(tree, (void *) 6) == true);
     assert(bpt_search(tree, (void *) 1, &node) == true);
     assert(node->is_root == true);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -846,6 +855,9 @@ remove_from_three_depth_tree(){
 
     assert(bpt_delete(tree, (void *) 1) == true);
     assert(ll_get_length(tree->root->keys) == 0);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
@@ -899,6 +911,9 @@ keys_test_more_data(void){
     assert(ll_get_length(tree->root->keys) == 0);
     assert(tree->root->is_leaf == true);
     assert(tree->root->is_root == true);
+
+    /* Clean up */
+    bpt_destroy(tree);
 }
 
 static void
