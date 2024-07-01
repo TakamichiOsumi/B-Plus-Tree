@@ -859,21 +859,18 @@ keys_test_more_data(void){
 		    employee_key_compare,
 		    employee_free, 3);
 
-    for (i = 1; i < max; i++){
+    for (i = 1; i < max; i++)
 	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
-    }
 
-    for (i = max - 1; i >= 1; i--){
+    for (i = max - 1; i >= 1; i--)
 	assert(bpt_search(tree, (void *) 1, &node) == true);
-    }
 
     for (i = 1; i < max; i++){
 	printf("debug : app deletes key = %lu\n", i);
 	assert(bpt_delete(tree, (void *) i) == true);
 	/* Detect any incorrect tree structure */
-	for (j = i + 1; j < max; j++){
+	for (j = i + 1; j < max; j++)
 	    assert(bpt_search(tree, (void *) j, &node) == true);
-	}
 	printf("debug : proved the tree has the valid searchability\n");
     }
 
@@ -882,17 +879,15 @@ keys_test_more_data(void){
     /*
      * Do the same thing in reverse order.
      */
-    for (i = max; i >= 1; i--){
+    for (i = max; i >= 1; i--)
 	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
-    }
 
     for (i = max; i >= 1; i--){
 	printf("debug : app deletes key = %lu\n", i);
 	assert(bpt_delete(tree, (void *) i) == true);
 	/* Detect any incorrect tree structure */
-	for (j = i - 1; j >= 1; j--){
+	for (j = i - 1; j >= 1; j--)
 	    assert(bpt_search(tree, (void *) j, &node) == true);
-	}
 	printf("debug : proved the tree has the valid searchability\n");
     }
 }
