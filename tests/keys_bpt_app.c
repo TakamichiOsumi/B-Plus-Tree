@@ -773,7 +773,7 @@ remove_from_three_depth_tree(){
     full_keys_comparison_test(node, leaves0);
     loop_bpt_search(tree, 8, leaves0);
 
-    /* Another removal triggers a new internal node borrowing */
+    /* Tiggers a new internal node borrowing */
     assert(bpt_delete(tree, (void *) 10) == true);
 
     /* Test key search */
@@ -783,7 +783,7 @@ remove_from_three_depth_tree(){
     bpt_search(tree, (void *) 1, &node);
     full_keys_comparison_test(node, leaves1);
 
-    /* Test the 'parent' attributes for debug */
+    /* Test the parent attributes for debugging */
     node = NULL;
     bpt_search(tree, (void *) 1, &node);
     assert(node->parent == node->next->parent &&
@@ -794,7 +794,7 @@ remove_from_three_depth_tree(){
     bpt_search(tree, (void *) 20, &node);
     assert(node->parent == node->next->parent);
 
-    /* This removal shrinks the height of the tree */
+    /* Shrinks the height of the tree */
     assert(bpt_delete(tree, (void *) 42) == true);
     assert(ll_get_length(tree->root->keys) == 3);
     one_node_keys_comparison_test(tree->root, indexes5);
