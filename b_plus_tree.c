@@ -821,9 +821,6 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 	child = ll_remove_first_data(curr->children);
 
-	/* No left children */
-	assert(CHILDREN_LEN(curr) == 0);
-
 	/* Reconnect nodes */
 	child->is_root = true;
 	child->parent = NULL;
@@ -926,9 +923,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	     */
 	    while(CHILDREN_LEN(curr) > 0){
 		child = (bpt_node *) ll_remove_first_data(curr->children);
-		if (!curr->is_leaf){
+		if (!curr->is_leaf)
 		    child->parent = curr->next;
-		}
 		ll_insert(curr->next->children, child);
 	    }
 
@@ -957,22 +953,22 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
      */
 
     if (curr->is_leaf){
-	void *removed_record;
+	void *record;
 
 	/*
 	 * The call of bpt_search() before the first call of
 	 * bpt_delete_internal() already proves that the key exists.
 	 * So, this leaf node must contain the removed key.
 	 */
-	removed_record = bpt_delete_key_value_from_leaf(curr,
-							removed_key);
+	record = bpt_delete_key_value_from_leaf(curr,
+						removed_key);
 	printf("debug : remove key = '%lu' on the leaf node\n",
 	       (uintptr_t) removed_key);
     }else{
 	/*
-	 * This internal node might or might not have the key. If
-	 * the index has the key, then replace the index with its
-	 * right child's minimum key.
+	 * This internal node might or might not have the index.
+	 * If the index contains the key, then remove and replace
+	 * it with its right child's minimum key.
 	 */
 	if (ll_has_key(curr->keys, removed_key)){
 	    void *key;
@@ -982,15 +978,15 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	    ll_remove_by_key(curr->keys, removed_key);
 
 	    /*
-	     * Root promotion.
+	     * When the whole tree has only tree keys only,
+	     * one in root and one key each in two children,
+	     * deletion of right child's key would lead to search
+	     * failure of a new index key after the deletion.
 	     *
-	     * When the whole tree has two key values only and
-	     * the root has one index for the right child's key, then
-	     * deletion of the right child's key would lead to search
-	     * failure of a new index key after the right child's
-	     * key deletion. This deletion leaves one left child with
-	     * key and one root and one right child without any keys.
-	     * Promote the left key in this case.
+	     * This deletion leaves one left child with key and
+	     * one root and one right child without any keys.
+	     *
+	     * Promote the left key in this case by recursive call.
 	     */
 	    if (KEY_LEN(curr) == 0){
 		bpt_node *left, *right;
@@ -1027,15 +1023,15 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 		    bpt_free_node(left);
 		    bpt_free_node(curr);
-
-		}else
+		}else{
 		    assert(0);
+		}
 
 		return;
 	    }
 
 	    assert((key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
-	    printf("debug : %lu was removed and %lu was inserted as the min key\n",
+	    printf("debug : removed %lu and inserted %lu as the min key\n",
 		   (uintptr_t) removed_key, (uintptr_t) key);
 	    ll_asc_insert(curr->keys, key);
 	}

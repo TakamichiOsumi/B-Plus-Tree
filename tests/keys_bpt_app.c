@@ -49,8 +49,8 @@ employee_key_access_from_employee(void *data){
 }
 
 /*
- * Execute bpt_search based on uintptr_t arrays,
- * expecting all search should succeed.
+ * Execute bpt_search based on uintptr_t arrays, expecting all
+ * search should succeed.
  */
 static void
 loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
@@ -65,8 +65,11 @@ loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
 }
 
 /*
- * Does this node have a valid relationship between key and value or
- * between indexes and children.
+ * Check if the input node satisfies either valid condition below
+ *
+ * (1) Have the same numbers of keys and values if it's a leaf node
+ * or
+ * (2) Have one more indexes than children if it's a internal node
  */
 static void
 test_node_validity(bpt_node *node){
@@ -87,7 +90,7 @@ one_node_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     ll_begin_iter(node->keys);
     while ((p = ll_get_iter_data(node->keys)) != NULL){
 	if ((uintptr_t) p != answers[i]){
-	    printf("debug : the expected value is not same as leaf node value. %lu vs. %lu\n",
+	    printf("debug : the expectation is not same as leaf value. %lu vs. %lu\n",
 		   (uintptr_t) p, answers[i]);
 	    assert(0);
 	}else{
@@ -113,7 +116,7 @@ full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 	ll_begin_iter(node->keys);
 	while((p = (void *) ll_get_iter_data(node->keys)) != NULL){
 	    if ((uintptr_t) p != answers[i]){
-		printf("debug : the expected value is not same as leaf node value. %lu vs. %lu\n",
+		printf("debug : the expected value is not same as leaf node value (%lu vs. %lu)\n",
 		       (uintptr_t) p, answers[i]);
 		assert(0);
 	    }else{
@@ -141,7 +144,7 @@ reverse_full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 	for (i = ll_get_length(node->keys) - 1; i >= 0; i--){
 	    p = ll_ref_index_data(node->keys, i);
 	    if ((uintptr_t) p != answers[i]){
-		printf("debug : the expectation contradicted the order of leaves (%lu vs. %lu)\n",
+		printf("debug : the expectation is different from the order of leaves (%lu vs. %lu)\n",
 		       (uintptr_t) p, (uintptr_t) answers[i]);
 	    }else{
 		printf("debug : iterating leaf nodes hit %lu\n", (uintptr_t) p);
