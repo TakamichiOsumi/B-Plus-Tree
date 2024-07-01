@@ -6,31 +6,26 @@
 
 #include "b_plus_tree.h"
 
-#define KEY_LEN(n) (ll_get_length(n->keys))
-
-#define CHILDREN_LEN(n) (ll_get_length(n->children))
-
+/* Macros for b+ tree node */
 #define HAVE_SAME_PARENT(n1, n2)				\
     (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
 
+/* Macros for key */
+#define KEY_LEN(n) (ll_get_length(n->keys))
+
+#define GET_MIN_KEY_NUM(max_keys)				\
+    ((max_keys % 2 == 0) ? (max_keys % 2 - 1) : (max_keys % 2))
+
 /* Macros for children */
+#define CHILDREN_LEN(n) (ll_get_length(n->children))
+
 #define GET_MIN_CHILDREN_NUM(max_keys)				\
     ((max_keys % 2 == 0) ? (max_keys / 2) : (max_keys / 2 + 1))
 
 #define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
 
-/* Macro for key */
-#define GET_MIN_KEY_NUM(max_keys)				\
-    ((max_keys % 2 == 0) ? (max_keys % 2 - 1) : (max_keys % 2))
-
-/* Note : This is same as the GET_MIN_CHILDREN_NUM */
-#define GET_SPLIT_NODE_NUM(max_keys)					\
-    ((max_keys % 2 == 0) ? (max_keys / 2) : ((max_keys / 2) + 1))
-
-static bpt_node *
-bpt_ref_index_child(bpt_node *curr, int index){
-    return (bpt_node *) ll_ref_index_data(curr->children, index);
-}
+#define bpt_ref_index_child(curr, index)	\
+    ((bpt_node *) ll_ref_index_data(curr->children, index))
 
 /*
  * Dump the entire tree keys from the top to the bottom.
@@ -228,9 +223,9 @@ static bpt_node *
 bpt_node_split(bpt_tree *bpt, bpt_node *curr){
     bpt_node *half;
     linked_list *left_keys, *left_children;
-    int node_num = GET_SPLIT_NODE_NUM(bpt->max_keys);
+    int node_num = GET_MIN_CHILDREN_NUM(bpt->max_keys);
 
-    /* Ensure that the keys have overflowed */
+    /* Ensure that keys have overflowed */
     assert(bpt->max_keys + 1 == KEY_LEN(curr));
 
     /* Create an empty node with null keys and children */
@@ -572,6 +567,9 @@ bpt_ref_leftmost_leaf_node(bpt_tree *tree){
     return node;
 }
 
+/*
+ * Return the right bpt_node * child for the key.
+ */
 static bpt_node *
 bpt_ref_right_child_by_key(bpt_node *node, void *key){
     bpt_node *key_iter, *child_iter, *right_child;
@@ -695,7 +693,6 @@ bpt_merge_nodes(bpt_node *curr, bool with_right){
      */
     assert(KEY_LEN(removed_child) == 0);
     assert(CHILDREN_LEN(removed_child) == 0);
-
     ll_begin_iter(curr->parent->children);
     while((curr_child = ll_get_iter_data(curr->parent->children)) != NULL){
 	if (curr_child == removed_child)
@@ -703,11 +700,11 @@ bpt_merge_nodes(bpt_node *curr, bool with_right){
     }
     ll_end_iter(curr->parent->children);
 
+    /* Debugging on the removed child is done. Free the child */
+    bpt_free_node(removed_child);
+
     printf("debug : this merge decrements the number of parent's keys to '%d'\n",
 	   KEY_LEN(curr->parent));
-
-    /* Free the unnecessary merged child */
-    bpt_free_node(removed_child);
 
     return deleted_key;
 }
@@ -861,7 +858,10 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	KEY_LEN(curr) == 0 && CHILDREN_LEN(curr) == 1){
 	/*
 	 * The previous call of bpt_delete_internal() has merged the last two
-	 * children of the current node and deleted one last index in this node.
+	 * children of this current node and deleted one last index within this
+	 * node.
+	 *
+	 * The current node's parent is root and it has one key left.
 	 */
 	if (HAVE_SAME_PARENT(curr->prev, curr)){
 	    bpt_node *child;
@@ -905,7 +905,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	    printf("debug : the tree height has shrunk, with key migration = %lu\n",
 		   (uintptr_t) min_key);
 
-	    /* Reconnect nodes. The previous node will become the new root */
+	    /*
+	     * Reconnect nodes.
+	     *
+	     * The previous node will become the new root.
+	     */
 	    bpt->root = curr->prev;
 	    curr->prev->is_root = true;
 	    curr->prev->next = NULL;
@@ -948,7 +952,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	    printf("debug : the tree height has shrunk, with key migration = %lu\n",
 		   (uintptr_t) key);
 
-	    /* Reconnect nodes. The next node will become the new root */
+	    /*
+	     * Reconnect nodes.
+	     *
+	     * The next node will become the new root
+	     */
 	    bpt->root = curr->next;
 	    curr->next->is_root = true;
 	    curr->next->prev = NULL;
@@ -979,7 +987,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	 */
 	record = bpt_delete_key_value_from_leaf(curr,
 						removed_key);
-	printf("debug : remove key = '%lu' on the leaf node\n",
+	printf("debug : removed key = '%lu' on the leaf node\n",
 	       (uintptr_t) removed_key);
     }else{
 	/*
@@ -1113,7 +1121,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 		    void *middle_key, *smallest_key;
 		    bpt_node *borrowed_child;
 
-		    /* Note : Remove the smallest key from the right node by borrowing */
+		    /* Remove the smallest key from the right node by borrowing */
 		    assert((smallest_key = ll_remove_first_data(curr->next->keys)) != NULL);
 		    middle_key = bpt_ref_key_between_children(curr, curr->next);
 
@@ -1196,7 +1204,7 @@ bpt_delete(bpt_tree *bpt, void *key){
 
     /* Remove the found key */
     if (found_same_key){
-	printf("debug : bpt_delete_internal with leaf node = %p\n", leaf_node);
+	printf("debug : call bpt_delete_internal() with leaf node = %p\n", leaf_node);
 
 	bpt_delete_internal(bpt, leaf_node, key);
 

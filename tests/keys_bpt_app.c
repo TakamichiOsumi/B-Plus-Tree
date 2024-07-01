@@ -735,13 +735,16 @@ remove_from_three_depth_tree(){
     assert(node->parent != node->next->next->next->parent);
 
     /* The root */
-    one_node_keys_comparison_test(node->parent->parent, indexes0);
+    one_node_keys_comparison_test(node->parent->parent,
+				  indexes0);
 
     /* The left node */
-    one_node_keys_comparison_test(node->parent, indexes1);
+    one_node_keys_comparison_test(node->parent,
+				  indexes1);
 
     /* The left node */
-    one_node_keys_comparison_test(node->next->next->next->parent, indexes2);
+    one_node_keys_comparison_test(node->next->next->next->parent,
+				  indexes2);
 
     /* The leaf nodes */
     full_keys_comparison_test(node, insertion);
@@ -763,7 +766,6 @@ remove_from_three_depth_tree(){
     one_node_keys_comparison_test(node, indexes4);
 
     /* The internal node borrowing */
-    printf("debug : start the internal node borrowing\n");
     assert(bpt_delete(tree, (void *) 31) == true);
 
     /* The leaf nodes */
@@ -801,8 +803,8 @@ remove_from_three_depth_tree(){
     loop_bpt_search(tree, 6, leaves2);
 
     /*
-     * Insert some new data so as to test another scenario of tree's
-     * height shrink.
+     * Insert some new data so as to test another scenario of
+     * tree's height shrink.
      */
     printf("debug : rebuild the tree to depth 3 tree\n");
 
