@@ -850,7 +850,7 @@ static void
 keys_test_more_data(void){
     bpt_tree *tree;
     bpt_node *node;
-    uintptr_t i, j, max = 32;
+    uintptr_t i, j, max = 1024;
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -874,13 +874,12 @@ keys_test_more_data(void){
 	assert(bpt_delete(tree, (void *) i) == true);
 	/* Detect any incorrect tree structure */
 	for (j = i + 1; j < max; j++){
-	    printf("internal : app searches key = %lu\n", j);
 	    assert(bpt_search(tree, (void *) j, &node) == true);
 	}
-	printf("debug : proved the tree has the correct b+ tree property\n");
-	printf("debug : dump the valid entire tree\n");
-	bpt_dump_whole_tree(tree);
+	printf("debug : proved the tree has the valid searchability\n");
     }
+
+    assert(ll_get_length(tree->root->keys) == 0);
 }
 
 static void

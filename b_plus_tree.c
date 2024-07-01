@@ -555,6 +555,23 @@ bpt_ref_subtree_minimum_key(bpt_node *node){
     return node->keys->head->data;
 }
 
+/*
+ * Return the reference of the leftmost leaf node for debugging.
+ */
+bpt_node *
+bpt_ref_leftmost_leaf_node(bpt_tree *tree){
+    bpt_node *node;
+
+    if (tree == NULL || tree->root == NULL)
+	return NULL;
+
+    node = tree->root;
+    while(!node->is_leaf)
+	node = (bpt_node *) node->children->head->data;
+
+    return node;
+}
+
 static bpt_node *
 bpt_ref_right_child_by_key(bpt_node *node, void *key){
     bpt_node *key_iter, *child_iter, *right_child;
@@ -976,60 +993,6 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 	    right_child = bpt_ref_right_child_by_key(curr, removed_key);
 	    ll_remove_by_key(curr->keys, removed_key);
-
-	    /*
-	     * When the whole tree has only tree keys only,
-	     * one in root and one key each in two children,
-	     * deletion of right child's key would lead to search
-	     * failure of a new index key after the deletion.
-	     *
-	     * This deletion leaves one left child with key and
-	     * one root and one right child without any keys.
-	     *
-	     * Promote the left key in this case by recursive call.
-	     */
-	    if (KEY_LEN(curr) == 0){
-		bpt_node *left, *right;
-
-		left = bpt_ref_index_child(curr, 0);
-		right = bpt_ref_index_child(curr, 1);
-
-		if (KEY_LEN(left) == 1){
-		    left->parent = left->next = NULL;
-		    left->is_root = true;
-		    bpt->root = left;
-
-		    while(KEY_LEN(right) > 0)
-			ll_asc_insert(left->keys,
-				      ll_remove_first_data(right->keys));
-		    while(CHILDREN_LEN(right) > 0)
-			ll_tail_insert(left->children,
-				       ll_remove_first_data(right->children));
-
-		    bpt_free_node(right);
-		    bpt_free_node(curr);
-
-		}else if (KEY_LEN(right) == 1){
-		    right->parent = right->prev = NULL;
-		    right->is_root = true;
-		    bpt->root = right;
-
-		    while(KEY_LEN(left) > 0)
-			ll_asc_insert(right->keys,
-				      ll_tail_remove(left->keys));
-		    while(CHILDREN_LEN(right) > 0)
-			ll_insert(right->children,
-				  ll_tail_remove(left->children));
-
-		    bpt_free_node(left);
-		    bpt_free_node(curr);
-		}else{
-		    assert(0);
-		}
-
-		return;
-	    }
-
 	    assert((key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
 	    printf("debug : removed %lu and inserted %lu as the min key\n",
 		   (uintptr_t) removed_key, (uintptr_t) key);
@@ -1187,52 +1150,13 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 		deleted_key = bpt_merge_nodes(curr, false);
 
 		/*
-		 * After this merge, check if the next call of bpt_delete_internal()
-		 * handles the root or not. In this case, this merge has deleted
-		 * the last key in the root, but the key is necessary to make all
-		 * the keys and children searchable from the top. Insert the last
-		 * key to the merged node and keep the tree requirement.
-		 *
-		 * The next call of bpt_delete_internal() will promote the merged
-		 * node as root in the processing at the beginning of the function.
-		 *
-		 * Note that this key migration needs to be taken care of only when
-		 * the current node is an internal node. Otherwise, a simple deletion
-		 * case, like one root with one key and two children with one key each
-		 * cannot deletes the right child's key completely.
+		 * Incorporate the split key from parent to the current node,
+		 * if this is an internal node.
 		 */
-		if (curr->prev->is_leaf == false &&
-		    curr->prev->parent->is_root == true &&
-		    KEY_LEN(curr->prev->parent) == 0){
+		if (curr->prev->is_leaf == false){
 		    ll_asc_insert(curr->prev->keys, deleted_key);
-		    printf("debug : conducted key migration for next root promotion = %lu\n",
+		    printf("debug : incorporate the split key = %lu from parent to child\n",
 			   (uintptr_t) deleted_key);
-		}
-
-		/*
-		 * See the comments on the same logic described below.
-		 *
-		 * Will the current node's parent be merged ? If so, move the keys and
-		 * records from the two previous node.
-		 */
-		if (curr->prev->is_leaf == true && KEY_LEN(curr->prev) == 1 &&
-		    curr->prev->parent != NULL && KEY_LEN(curr->prev->parent) == 0 &&
-		    curr->prev->parent->is_root == false && curr->prev->prev != NULL &&
-		    curr->prev->parent->prev == curr->prev->prev->parent &&
-		    KEY_LEN(curr->prev->prev->parent) <= min_key_num){
-		    /* The parent node has no key and merging will be conducted for the parent */
-		    /* int index; */
-		    /* bpt_node *n; */
-
-		    /* Move the next node keys and children to the current node */
-		    while(KEY_LEN(curr->prev->prev) > 0)
-			ll_insert(curr->prev->keys,
-				  ll_tail_remove(curr->prev->prev->keys));
-		    while(CHILDREN_LEN(curr->prev->prev) > 0)
-			ll_insert(curr->prev->children,
-				  ll_tail_remove(curr->prev->prev->children));
-
-		    /* Remove the empty node (curr->prev->prev) from its parent */
 		}
 	    }else if (has_right_sibling){
 		void *deleted_key;
@@ -1241,76 +1165,14 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 		deleted_key = bpt_merge_nodes(curr, true);
 
-		if (curr->is_leaf == false &&
-		    curr->parent->is_root == true && KEY_LEN(curr->parent) == 0){
-		    ll_asc_insert(curr->keys, deleted_key);
-		    printf("debug : conducted key migration for next root promotion = %lu\n",
-			   (uintptr_t) deleted_key);
-		}
-
 		/*
-		 * There can be a case that deleting keys from the lower values continuously
-		 * leads to the leaf nodes merge that breaks the b+ tree property.
-		 *
-		 * Think about the delesion of 7 in one subtree like below.
-		 *
-		 *             (snipped the upper layer)
-		 *
-		 *                   [9, 13]
-		 *       [8]                         [11]
-		 *   [7]     [8]            [9, 10]        [11,  12]
-		 *
-		 * Removing 7 triggers merge of the leftmost two nodes and left value 8
-		 * becomes the only one child for the upper node, which breaks the order
-		 * of keys and from this moment, the search of 8 would fail.
-		 *
-		 * To address this situation, take two steps to keep tree property.
-		 *
-		 * (step1) Merge the nodes and remove the index = 8 in between.
-		 *
-		 *                [9, 13]
-		 *        [/]                [11]
-		 *   [8]             [9, 10]      [11,  12]
-		 *
-		 * (step2) Move right children to the leftmost node made by the merge.
-		 *
-		 *                [13]
-		 *             [11]
-		 *   [8, 9, 10]   [11,  12]
-		 *
+		 * Incorporate the split key from parent to the current node,
+		 * if this is an internal node.
 		 */
-		if (curr->is_leaf == true && KEY_LEN(curr) == 1 &&
-		    curr->parent != NULL && KEY_LEN(curr->parent) == 0 &&
-		    curr->parent->is_root == false && curr->next != NULL &&
-		    curr->parent->next == curr->next->parent &&
-		    KEY_LEN(curr->parent->next) <= min_key_num){
-		    /* The parent node has no key and merging will be conducted for the parent */
-		    int index;
-		    bpt_node *n;
-
-		    /* Move the next node keys and children to the current node */
-		    while(KEY_LEN(curr->next) > 0)
-			ll_tail_insert(curr->keys,
-				       ll_remove_first_data(curr->next->keys));
-		    while(CHILDREN_LEN(curr->next) > 0)
-			ll_tail_insert(curr->children,
-				       ll_remove_first_data(curr->next->children));
-
-		    /* Remove the next child from the parent */
-		    ll_begin_iter(curr->parent->next->children);
-		    for (index = 0; index < CHILDREN_LEN(curr->parent->next); index++){
-			n = (bpt_node *) ll_get_iter_data(curr->parent->next->children);
-			if (curr->next == n){
-			    /* Before the child removal, reconnect nodes */
-			    if (curr->next->next != NULL)
-				curr->next->next->prev = curr;
-			    curr->next = curr->next->next;
-			    bpt_free_node(n);
-			    break;
-			}
-		    }
-		    ll_end_iter(curr->parent->next->children);
-		    assert(ll_index_remove(curr->parent->next->children, index) != NULL);
+		if (curr->is_leaf == false){
+		    ll_asc_insert(curr->keys, deleted_key);
+		    printf("debug : incorporate the split key = %lu from parent to child\n",
+			   (uintptr_t) deleted_key);
 		}
 	    }else{
 		printf("debug : merging nodes didn't happen either\n");
