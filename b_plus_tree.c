@@ -8,25 +8,19 @@
 /* Macros for b+ tree node */
 #define HAVE_SAME_PARENT(n1, n2)				\
     (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
-
-/* Written as if this is a function for readability */
 #define bpt_ref_index_child(curr, index)			\
     ((bpt_node *) ll_ref_index_data(curr->children, index))
 
 /* Macros for key */
 #define KEY_LEN(n) (ll_get_length(n->keys))
-
 #define GET_MIN_KEY_NUM(max_keys)				\
     ((max_keys % 2 == 0) ? (max_keys % 2 - 1) : (max_keys % 2))
 
 /* Macros for children */
+#define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
 #define CHILDREN_LEN(n) (ll_get_length(n->children))
-
 #define GET_MIN_CHILDREN_NUM(max_keys)				\
     ((max_keys % 2 == 0) ? (max_keys / 2) : (max_keys / 2 + 1))
-
-#define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
-
 
 /*
  * Check if the input node satisfies either valid condition below.
@@ -35,7 +29,8 @@
  * or
  * (2) Have one more indexes than children if it's a internal node
  *
- * Insert this function for tests.
+ * Insert this function whenever node gets updated, by insert, delete,
+ * split, etc.
  */
 void
 bpt_node_validity(bpt_node *node){
@@ -336,12 +331,14 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 		   (uintptr_t) new_key, curr);
 	    ll_asc_insert(curr->keys, new_key);
 	    ll_tail_insert(curr->children, new_value);
+	    bpt_node_validity(curr);
 	}else{
 	    /* Get a copied up key from lower node */
 	    printf("debug : insert a copied up key to curr->children[%d]\n",
 		   new_child_index);
 	    ll_asc_insert(curr->keys, new_key);
 	    ll_index_insert(curr->children, new_child, new_child_index);
+	    bpt_node_validity(curr);
 	}
     }else{
 	/*
@@ -405,9 +402,9 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 	    ll_end_iter(right_half->children);
 
 	    /* Use the utility for debug */
-	    bpt_dump_children_keys("dump the left internal node's children after the split:\n",
+	    bpt_dump_children_keys("splitted left internal node's children :\n",
 				   curr);
-	    bpt_dump_children_keys("dump the right internal node's children after the split:\n",
+	    bpt_dump_children_keys("splitted right internal node's children :\n",
 				   right_half);
 	}
 
@@ -431,6 +428,8 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 		   (uintptr_t) copied_up_key);
 	    ll_tail_insert(new_top->children, curr);
 	    ll_tail_insert(new_top->children, right_half);
+
+	    bpt_node_validity(new_top);
 	}else{
 	    /*
 	     * Propagate the key insertion to the upper node. Notify the
@@ -831,6 +830,10 @@ static void
 bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
     int min_key_num = GET_MIN_KEY_NUM(bpt->max_keys);
 
+    assert(bpt != NULL);
+    assert(curr != NULL);
+    assert(removed_key != NULL);
+
     printf("debug : bpt_delete_internal() for %p\n"
            "debug : current node = %s and %s, the number of keys = %d, the number of children = %d\n",
 	   curr,
@@ -1007,6 +1010,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 						removed_key);
 	printf("debug : removed key = '%lu' on the leaf node\n",
 	       (uintptr_t) removed_key);
+
+	bpt_node_validity(curr);
     }else{
 	/*
 	 * This internal node might or might not have the index.
@@ -1023,6 +1028,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	    printf("debug : removed %lu and inserted %lu as the min key\n",
 		   (uintptr_t) removed_key, (uintptr_t) key);
 	    ll_asc_insert(curr->keys, key);
+
+	    bpt_node_validity(curr);
 	}
     }
 
@@ -1067,6 +1074,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 		    /* Update the parent's index */
 		    bpt_replace_index(curr, false);
 
+		    bpt_node_validity(curr);
+
 		    /* Continue to update the indexes. Go up by recursive call */
 		    if (!curr->is_root)
 			bpt_delete_internal(bpt, curr->parent, removed_key);
@@ -1101,6 +1110,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 		    printf("debug : the new current node's key = %lu, new parent's index key = %lu\n",
 			   (uintptr_t) middle_key, (uintptr_t) largest_key);
+
+		    bpt_node_validity(curr);
 		}
 	    }
 	}
@@ -1129,6 +1140,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 		    /* Update the parent's index */
 		    bpt_replace_index(curr, true);
+
+		    bpt_node_validity(curr);
 
 		    /* Continue to update the indexes. Go up by recursive call */
 		    if (!curr->is_root)
@@ -1159,6 +1172,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 		    printf("debug : the new current node's key = %lu, the new parent's index key = %lu\n",
 			   (uintptr_t) middle_key, (uintptr_t) smallest_key);
+
+		    bpt_node_validity(curr);
 		}
 	    }
 	}
@@ -1173,6 +1188,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 		printf("debug : bpt_merge_nodes() with left node\n");
 
+		/* The current node gets merged with the previous one */
 		deleted_key = bpt_merge_nodes(curr, false);
 
 		/*
@@ -1184,6 +1200,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 		    printf("debug : incorporate the split key = %lu from parent to child\n",
 			   (uintptr_t) deleted_key);
 		}
+
+		bpt_node_validity(curr->prev);
 	    }else if (has_right_sibling){
 		void *deleted_key;
 
@@ -1200,6 +1218,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 		    printf("debug : incorporate the split key = %lu from parent to child\n",
 			   (uintptr_t) deleted_key);
 		}
+
+		bpt_node_validity(curr);
 	    }else{
 		printf("debug : merging nodes didn't happen either\n");
 	    }
