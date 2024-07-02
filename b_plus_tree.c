@@ -1015,7 +1015,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
     }else{
 	/*
 	 * This internal node might or might not have the index.
-	 * If the indexes contains the key, then remove and replace
+	 * If the indexes contain the key, then remove and replace
 	 * it with its right child's minimum key.
 	 */
 	if (ll_has_key(curr->keys, removed_key)){
@@ -1034,7 +1034,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
     }
 
     /*
-     * We are done with key deletion of this node. Keep the b+ tree property.
+     * We are done with key deletion of this node. Execute the following codes
+     * and keep the b+ tree property.
      */
 
     if (KEY_LEN(curr) >= min_key_num){
@@ -1044,7 +1045,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 	return;
     }else{
-	/* The current node doesn't have enought keys. Try borrowing first */
+	/* The current node doesn't have enough keys. Try borrowing first */
 	bool has_left_sibling = false, borrowed_from_left = false,
 	    has_right_sibling = false, borrowed_from_right = false;
 	void *borrowed_key;
