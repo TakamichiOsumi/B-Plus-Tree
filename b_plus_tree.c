@@ -23,14 +23,12 @@
     ((max_keys % 2 == 0) ? (max_keys / 2) : (max_keys / 2 + 1))
 
 /*
- * Check if the input node satisfies either valid condition below.
+ * Insert this function for any updates of node to check if it
+ * satisfies either valid condition below.
  *
  * (1) Have the same numbers of keys and values if it's a leaf node
  * or
  * (2) Have one more indexes than children if it's a internal node
- *
- * Insert this function whenever node gets updated, by insert, delete,
- * split, etc.
  */
 void
 bpt_node_validity(bpt_node *node){
@@ -282,18 +280,6 @@ bpt_node_split(bpt_tree *bpt, bpt_node *curr){
     return half;
 }
 
-/* Return the first data reference from passed keys */
-static void *
-bpt_get_copied_up_key(linked_list *keys){
-    void *first_key;
-
-    ll_begin_iter(keys);
-    first_key = ll_get_iter_data(keys);
-    ll_end_iter(keys);
-
-    return first_key;
-}
-
 /*
  * Insert a new pair of key and data, propagating keys towards
  * the top of tree recursively, when required.
@@ -372,7 +358,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 		      right_half->keys);
 
 	/* Get the key that will go up and/or will be deleted */
-	copied_up_key = bpt_get_copied_up_key(right_half->keys);
+	copied_up_key = ll_ref_index_data(right_half->keys, 0);
 
 	/*
 	 * Connect split nodes at the same depth. When there is other node
