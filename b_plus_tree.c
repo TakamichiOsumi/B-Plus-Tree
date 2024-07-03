@@ -487,7 +487,7 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
     /*
      * This is an empty node. This code path gets hit when one tries to
      * search tree's root with no data. Need to address since any initial
-     * insert depends on the search the root wihout data.
+     * insert depends on the search of the root wihout data.
      */
     if (KEY_LEN(curr) == 0)
 	return false;
@@ -1180,7 +1180,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 		 * the current (right) node will be freed. Then,
 		 * refer to any attributes of 'curr' won't be
 		 * allowed after the bpt_merge_nodes(). Save
-		 * parameters necessary for any subsequent
+		 * the parameter necessary for any subsequent
 		 * processing in advance.
 		 */
 		void *deleted_key;
@@ -1205,7 +1205,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 
 		bpt_node_validity(prev);
 
-		/* Go up by using the saved reference of previous sibling */
+		/*
+		 * Go up by using the saved reference of previous sibling.
+		 * Avoid the call of the bpt_delete_internal() that uses
+		 * current node below.
+		 */
 		if (prev->parent)
 		    bpt_delete_internal(bpt, prev->parent, removed_key);
 
