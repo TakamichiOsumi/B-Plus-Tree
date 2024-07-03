@@ -11,7 +11,7 @@ RECORDS_APP	= record_management_bptree
 
 LIB	= libbplustree.a
 
-all: $(LIB)
+all: $(LIB) $(KEYS_APP) $(RECORDS_APP)
 
 library:
 	for dir in $(DEPENDENCY_LIB); do make -C $$dir; done

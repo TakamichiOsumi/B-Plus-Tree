@@ -120,7 +120,7 @@ full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 /* Check all the keys at the same level from right to left */
 static void
 reverse_full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
-    int i = 0;
+    int i = 0, j = 0;
     uintptr_t *p;
 
     assert(node != NULL);
@@ -128,12 +128,14 @@ reverse_full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
     while(true){
 	for (i = ll_get_length(node->keys) - 1; i >= 0; i--){
 	    p = ll_ref_index_data(node->keys, i);
-	    if ((uintptr_t) p != answers[i]){
+	    if ((uintptr_t) p != answers[j]){
 		printf("debug : the expectation is different from the order of leaves (%lu vs. %lu)\n",
-		       (uintptr_t) p, (uintptr_t) answers[i]);
+		       (uintptr_t) p, (uintptr_t) answers[j]);
+		assert(0);
 	    }else{
 		printf("debug : iterating leaf nodes hit %lu\n", (uintptr_t) p);
 	    }
+	    j++;
 	}
 	if ((node = node->prev) == NULL)
 	    break;
@@ -609,6 +611,9 @@ remove_from_two_depth_tree(void){
     for (i = 1; i <= 6; i++)
 	assert(bpt_insert(tree, (void *) i, &emp) == true);
 
+    /* Dump the tree */
+    bpt_dump_whole_tree(tree);
+
     /* Is the tree same as the expectation ? */
     assert(ll_get_length(tree->root->keys) == 2);
 
@@ -616,6 +621,8 @@ remove_from_two_depth_tree(void){
     node = NULL;
     assert(bpt_search(tree, (void *) 1, &node) == true);
     assert(ll_get_length(node->keys) == 2);
+
+    /* Check the current all leaves */
     full_keys_comparison_test(node, leaves0);
 
     /* The middle child */
@@ -647,7 +654,7 @@ remove_from_two_depth_tree(void){
     full_keys_comparison_test(node->parent, indexes1);
 
     /*
-     * Another Removal. Many things happen by this.
+     * Another removal. This causes many things.
      *
      * (1) Borrow one key from the right child.
      *
@@ -812,8 +819,8 @@ remove_from_three_depth_tree(){
     loop_bpt_search(tree, 6, leaves2);
 
     /*
-     * Insert some new data so as to test another scenario of
-     * tree's height shrink.
+     * Insert some new data so as to test another scenario
+     * of tree's height shrink.
      */
     printf("debug : rebuild the tree to depth 3 tree\n");
 

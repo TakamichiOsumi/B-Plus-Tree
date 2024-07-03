@@ -56,13 +56,14 @@ bpt_dump_whole_tree(bpt_tree *bpt){
 	leftmost = curr->is_leaf == true ? NULL : bpt_ref_index_child(curr, 0);
 
 	/* Dump keys of all vertical nodes */
+	printf("debug : ");
 	while(true){
 	    printf("[");
 	    ll_begin_iter(curr->keys);
 	    for (i = 0; i < KEY_LEN(curr); i++){
 		printf("%lu, ",
 		       (uintptr_t) ll_get_iter_data(curr->keys));
-		/* TODO : show each record */
+		/* TODO : show each record, if this is a leaf node */
 	    }
 	    ll_end_iter(curr->keys);
 	    printf("] ");
@@ -483,6 +484,14 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
      */
     keys = curr->keys;
 
+    /*
+     * This is an empty node. This code path gets hit when one tries to
+     * search tree's root with no data. Need to address since any initial
+     * insert depends on the search the root wihout data.
+     */
+    if (KEY_LEN(curr) == 0)
+	return false;
+
     ll_begin_iter(keys);
     for (children_index = 0; children_index < KEY_LEN(curr); children_index++){
 	diff = keys->key_compare_cb(keys->key_access_cb(ll_get_iter_data(keys)),
@@ -575,7 +584,7 @@ bpt_ref_leftmost_leaf_node(bpt_tree *tree){
  */
 static bpt_node *
 bpt_ref_right_child_by_key(bpt_node *node, void *key){
-    bpt_node *key_iter, *child_iter, *right_child;
+    bpt_node *key_iter, *child_iter;
 
     ll_begin_iter(node->keys);
     ll_begin_iter(node->children);
@@ -587,16 +596,16 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
 	    break;
     }
     /* The right child for the key is the next pointer */
-    right_child = (bpt_node *) ll_get_iter_data(node->children);
-    assert(right_child != NULL);
+    child_iter = (bpt_node *) ll_get_iter_data(node->children);
+    assert(child_iter != NULL);
     ll_end_iter(node->keys);
     ll_end_iter(node->children);
 
-    return right_child;
+    return child_iter;
 }
 
 /*
- * Don't expect children can perform 'key_access_cb' and 'key_compare_cb'.
+ * Don't expect children can perform key_access_cb and key_compare_cb.
  * So, merging children uses some basic APIs for linked list such as
  * ll_tail_insert() or ll_remove_first_data().
  *
@@ -689,7 +698,7 @@ bpt_merge_nodes(bpt_node *curr, bool with_right){
     }
 
     /*
-     * Check two conditions for debug.
+     * Debug.
      *
      * (1) The removed child must have no left keys and children.
      * (2) The parent must delete the pointer to this removed child.
@@ -705,9 +714,6 @@ bpt_merge_nodes(bpt_node *curr, bool with_right){
 
     /* Debugging on the removed child is done. Free the child */
     bpt_free_node(removed_child);
-
-    printf("debug : this merge decrements the number of parent's keys to '%d'\n",
-	   KEY_LEN(curr->parent));
 
     return deleted_key;
 }
@@ -985,15 +991,13 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
      */
 
     if (curr->is_leaf){
-	void *record;
-
 	/*
 	 * The call of bpt_search() before the first call of
 	 * bpt_delete_internal() already proves that the key exists.
 	 * So, this leaf node must contain the removed key.
 	 */
-	record = bpt_delete_key_value_from_leaf(curr,
-						removed_key);
+	(void) bpt_delete_key_value_from_leaf(curr,
+					      removed_key);
 	printf("debug : removed key = '%lu' on the leaf node\n",
 	       (uintptr_t) removed_key);
 
@@ -1171,30 +1175,56 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key){
 	    printf("debug : borrowing a key didn't happen\n");
 
 	    if (has_left_sibling){
+		/*
+		 * Note that after the merge with the left node,
+		 * the current (right) node will be freed. Then,
+		 * refer to any attributes of 'curr' won't be
+		 * allowed after the bpt_merge_nodes(). Save
+		 * parameters necessary for any subsequent
+		 * processing in advance.
+		 */
 		void *deleted_key;
+		bpt_node *prev = curr->prev;
 
 		printf("debug : bpt_merge_nodes() with left node\n");
 
 		/* The current node gets merged with the previous one */
 		deleted_key = bpt_merge_nodes(curr, false);
+		printf("debug : this merge decrements the number of parent's keys to '%d'\n",
+		       KEY_LEN(prev->parent));
 
 		/*
 		 * Incorporate the split key from parent to the current node,
 		 * if this is an internal node.
 		 */
-		if (curr->prev->is_leaf == false){
-		    ll_asc_insert(curr->prev->keys, deleted_key);
+		if (prev->is_leaf == false){
+		    ll_asc_insert(prev->keys, deleted_key);
 		    printf("debug : incorporate the split key = %lu from parent to child\n",
 			   (uintptr_t) deleted_key);
 		}
 
-		bpt_node_validity(curr->prev);
+		bpt_node_validity(prev);
+
+		/* Go up by using the saved reference of previous sibling */
+		if (prev->parent)
+		    bpt_delete_internal(bpt, prev->parent, removed_key);
+
+		return;
+
 	    }else if (has_right_sibling){
+		/*
+		 * This path merges the current node with the next node.
+		 * Any left data in the next node will be moved to the current
+		 * node. Thus, after the bpt_merge_nodes(), attributes of the
+		 * current node are available.
+		 */
 		void *deleted_key;
 
 		printf("debug : bpt_merge_nodes() with right node\n");
 
 		deleted_key = bpt_merge_nodes(curr, true);
+		printf("debug : this merge decrements the number of parent's keys to '%d'\n",
+		       KEY_LEN(curr->parent));
 
 		/*
 		 * Incorporate the split key from parent to the current node,

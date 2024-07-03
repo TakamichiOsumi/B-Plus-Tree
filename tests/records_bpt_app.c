@@ -43,6 +43,8 @@ records_test_bpt_search(){
 		    employee_key_compare,
 		    employee_free,
 		    3);
+
+    bpt_destroy(tree);
 }
 
 static void
