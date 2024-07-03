@@ -133,7 +133,7 @@ reverse_full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
 		       (uintptr_t) p, (uintptr_t) answers[j]);
 		assert(0);
 	    }else{
-		printf("debug : iterating leaf nodes hit %lu\n", (uintptr_t) p);
+		printf("debug : iterating leaf nodes hits %lu\n", (uintptr_t) p);
 	    }
 	    j++;
 	}
