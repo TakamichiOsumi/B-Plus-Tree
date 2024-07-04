@@ -15,4 +15,6 @@ Making a submodule for my other repository for self-education.
 
 ## Notes
 
+This is written to understand the basic flow of B+ Tree algorithms.
+
 The difference from the normal B+ Tree is that nodes at the same depth are connected as doubly linked list.
