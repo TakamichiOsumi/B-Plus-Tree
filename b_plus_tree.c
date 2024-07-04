@@ -17,8 +17,8 @@
     ((max_keys % 2 == 0) ? (max_keys / 2 - 1) : (max_keys / 2))
 
 /* Macros for children */
-#define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
 #define CHILDREN_LEN(n) (ll_get_length(n->children))
+#define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
 #define GET_MIN_CHILDREN_NUM(max_keys)				\
     ((max_keys % 2 == 0) ? (max_keys / 2) : (max_keys / 2 + 1))
 
@@ -542,7 +542,8 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
 /*
  * Wrapper function of bpt_search_internal().
  *
- * Allow the leaf_node to be null, when it's not necessary.
+ * Allow the leaf_node to be null, when user doesn't need to interact
+ * with the leaf node.
  */
 bool
 bpt_search(bpt_tree *bpt, void* new_key, bpt_node **leaf_node){
