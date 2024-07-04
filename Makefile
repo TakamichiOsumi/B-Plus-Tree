@@ -34,6 +34,6 @@ clean:
 	@rm -rf *.o tests/$(KEYS_APP)* tests/$(RECORDS_APP)* $(LIB)
 	@for dir in $(DEPENDENCY_LIB); do cd $$dir; make clean; cd ..; done
 
-test: $(LIB) $(KEYS_APP) $(RECORDS_APP)
+test: $(OBJ_COMPONENTS) $(KEYS_APP) $(RECORDS_APP)
 	@./tests/$(KEYS_APP) &> /dev/null && echo "Success when the value of keys management tests is zero >>> $$?"
 	@./tests/$(RECORDS_APP) &> /dev/null && echo "Success when the value of records management tests is zero >>> $$?"
