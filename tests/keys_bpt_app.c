@@ -868,7 +868,7 @@ remove_from_three_depth_tree(){
 }
 
 static void
-keys_test_more_data(void){
+keys_test_more_data(uint16_t max_keys){
     bpt_tree *tree;
     bpt_node *node;
     uintptr_t i, j, max = 1024;
@@ -878,7 +878,7 @@ keys_test_more_data(void){
 		    employee_free,
 		    employee_key_access_from_employee,
 		    employee_key_compare,
-		    employee_free, 3);
+		    employee_free, max_keys);
 
     for (i = 1; i < max; i++)
 	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
@@ -892,17 +892,13 @@ keys_test_more_data(void){
 	/* Detect any incorrect tree structure immediately */
 	for (j = i + 1; j < max; j++)
 	    assert(bpt_search(tree, (void *) j, &node) == true);
-	printf("debug : proved the tree has the valid searchability\n");
-	bpt_dump_whole_tree(tree);
     }
 
     assert(ll_get_length(tree->root->keys) == 0);
     assert(tree->root->is_leaf == true);
     assert(tree->root->is_root == true);
 
-    /*
-     * Do the same thing in reverse order.
-     */
+    /* Do the same thing in reverse order */
     for (i = max; i >= 1; i--)
 	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
 
@@ -912,64 +908,6 @@ keys_test_more_data(void){
 	/* Detect any incorrect tree structure immediately */
 	for (j = i - 1; j >= 1; j--)
 	    assert(bpt_search(tree, (void *) j, &node) == true);
-	printf("debug : proved the tree has the valid searchability\n");
-    }
-
-    assert(ll_get_length(tree->root->keys) == 0);
-    assert(tree->root->is_leaf == true);
-    assert(tree->root->is_root == true);
-
-    /* Clean up */
-    bpt_destroy(tree);
-}
-
-void
-keys_test_larger_max_keys(){
-    bpt_tree *tree;
-    bpt_node *node;
-    uintptr_t i, j, max = 1024;
-
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    employee_key_access_from_employee,
-		    employee_key_compare,
-		    employee_free, 9);
-
-    for (i = 1; i < max; i++)
-	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
-
-    for (i = max - 1; i >= 1; i--)
-	assert(bpt_search(tree, (void *) i, &node) == true);
-
-    for (i = 1; i < max; i++){
-	printf("debug : app deletes key = %lu\n", i);
-	assert(bpt_delete(tree, (void *) i, NULL) == true);
-	/* Detect any incorrect tree structure immediately */
-	for (j = i + 1; j < max; j++)
-	    assert(bpt_search(tree, (void *) j, &node) == true);
-	printf("debug : proved the tree has the valid searchability\n");
-	bpt_dump_whole_tree(tree);
-    }
-
-    assert(ll_get_length(tree->root->keys) == 0);
-    assert(tree->root->is_leaf == true);
-    assert(tree->root->is_root == true);
-
-    /*
-     * Do the same thing in reverse order.
-     */
-    for (i = max; i >= 1; i--)
-	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
-
-    for (i = max; i >= 1; i--){
-	printf("debug : app deletes key = %lu\n", i);
-	assert(bpt_delete(tree, (void *) i, NULL) == true);
-	/* Detect any incorrect tree structure immediately */
-	for (j = i - 1; j >= 1; j--)
-	    assert(bpt_search(tree, (void *) j, &node) == true);
-	printf("debug : proved the tree has the valid searchability\n");
-	bpt_dump_whole_tree(tree);
     }
 
     assert(ll_get_length(tree->root->keys) == 0);
@@ -1019,9 +957,9 @@ keys_test_bpt_remove(void){
 static void
 keys_test_combined(){
     printf("<Insert and remove larger number of keys>\n");
-    keys_test_more_data();
+    keys_test_more_data(3);
     printf("<Test tree with higher value of max keys>\n");
-    keys_test_larger_max_keys();
+    keys_test_more_data(9);
 }
 
 int
