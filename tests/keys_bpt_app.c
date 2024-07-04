@@ -958,7 +958,11 @@ static void
 keys_test_combined(){
     printf("<Insert and remove larger number of keys>\n");
     keys_test_more_data(3);
-    printf("<Test tree with higher value of max keys>\n");
+
+    printf("<Test tree with higher value of max keys -part1->\n");
+    keys_test_more_data(8);
+
+    printf("<Test tree with higher value of max keys -part2->\n");
     keys_test_more_data(9);
 }
 

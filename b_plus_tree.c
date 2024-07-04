@@ -469,7 +469,8 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
 	   (uintptr_t) new_key, curr);
 
     /* Set the last searched node first. This call can be last */
-    *leaf_node = curr;
+    if (leaf_node != NULL)
+	*leaf_node = curr;
 
     /*
      * Iterate each bpt's key and compare it with the new key. Break
@@ -540,6 +541,8 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
 
 /*
  * Wrapper function of bpt_search_internal().
+ *
+ * Allow the leaf_node to be null, when it's not necessary.
  */
 bool
 bpt_search(bpt_tree *bpt, void* new_key, bpt_node **leaf_node){
