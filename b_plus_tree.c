@@ -14,7 +14,7 @@
 /* Macros for key */
 #define KEY_LEN(n) (ll_get_length(n->keys))
 #define GET_MIN_KEY_NUM(max_keys)				\
-    ((max_keys % 2 == 0) ? (max_keys % 2 - 1) : (max_keys % 2))
+    ((max_keys % 2 == 0) ? (max_keys / 2 - 1) : (max_keys / 2))
 
 /* Macros for children */
 #define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
@@ -781,6 +781,9 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
     while(true){
 	if (child == left)
 	    break;
+	/* Iterate the next pair of key and child */
+	key = ll_get_iter_data(left->parent->keys);
+	child = ll_get_iter_data(left->parent->children);
     }
     assert(right == ll_get_iter_data(left->parent->children));
     ll_end_iter(left->parent->keys);
