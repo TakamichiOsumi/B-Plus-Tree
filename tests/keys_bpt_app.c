@@ -865,7 +865,7 @@ remove_from_three_depth_tree(){
 static void
 keys_test_more_data(uint16_t max_keys){
     bpt_tree *tree;
-    uintptr_t i, j, max = 1024;
+    uintptr_t i, j, max = 2048;
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -953,10 +953,10 @@ keys_test_combined(){
     printf("<Insert and remove larger number of keys>\n");
     keys_test_more_data(3);
 
-    printf("<Test tree with higher value of max keys -part1->\n");
+    printf("<Tree with higher value of max keys -part1->\n");
     keys_test_more_data(8);
 
-    printf("<Test tree with higher value of max keys -part2->\n");
+    printf("<Tree with higher value of max keys -part2->\n");
     keys_test_more_data(9);
 }
 
