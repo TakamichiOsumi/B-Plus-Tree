@@ -85,9 +85,6 @@ bpt_node *bpt_gen_root_callbacks_node(bpt_tree *bpt);
 bpt_tree *bpt_init(bpt_key_access_cb keys_key_access,
 		   bpt_key_compare_cb keys_key_compare,
 		   bpt_free_cb keys_key_free,
-		   bpt_key_access_cb children_key_access,
-		   bpt_key_compare_cb children_key_compare,
-		   bpt_free_cb children_key_free,
 		   uint16_t max_keys);
 bool bpt_insert(bpt_tree *bpt, void *key, void *data);
 bool bpt_search(bpt_tree *bpt, void *key, bpt_node **node,

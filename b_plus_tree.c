@@ -189,9 +189,7 @@ bpt_tree *
 bpt_init(bpt_key_access_cb keys_key_access,
 	 bpt_key_compare_cb keys_key_compare,
 	 bpt_free_cb keys_key_free,
-	 bpt_key_access_cb children_key_access,
-	 bpt_key_compare_cb children_key_compare,
-	 bpt_free_cb children_key_free, uint16_t max_keys){
+	 uint16_t max_keys){
     bpt_tree *tree;
 
     if(max_keys < 2){
@@ -215,9 +213,28 @@ bpt_init(bpt_key_access_cb keys_key_access,
     tree->root->keys = ll_init(keys_key_access,
 			       keys_key_compare,
 			       keys_key_free);
-    tree->root->children = ll_init(children_key_access,
-				   children_key_compare,
-				   children_key_free);
+
+    /*
+     * Manipulation of children like insert should be
+     * designed independently from application-defined
+     * keys callbacks.
+     *
+     * This idea allows insertion of a new record to omit
+     * unnecessary duplicate computation or comparison of
+     * key value in record.
+     *
+     * For instance, if after the insertion of a new key,
+     * it's necessary to extract key value from the sequence
+     * of record data again and compare it with other
+     * existing records, then the insertion leads to the key
+     * comparisons twice for the new key and for the record.
+     * This should be avoided.
+     *
+     * Therefore, any manipulation of children should depend
+     * on some basic APIs without key access and compare
+     * callbacks.
+     */
+    tree->root->children = ll_init(NULL, NULL, NULL);
 
     return tree;
 }
@@ -343,18 +360,19 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 	 */
 	bpt_node *right_half, *child;
 	void *copied_up_key = NULL;
+	int key_idx;
 
 	printf("debug : split triggered by %lu\n", (uintptr_t) new_key);
 
 	/*
 	 * Add the new key and value (or child). This temporarily
-	 * make the number of keys larger than the b+ tree's constraints.
-	 * But bpt_node_split() called below keeps the tree's constraints
-	 * and balance of the whole tree.
+	 * make the number of keys larger than the b+ tree's property.
+	 * But bpt_node_split() called below keeps it and balance of
+	 * the whole tree.
 	 */
-	ll_asc_insert(curr->keys, new_key);
+	key_idx = ll_asc_insert(curr->keys, new_key);
 	if (curr->is_leaf == true)
-	    ll_asc_insert(curr->children, new_value);
+	    ll_index_insert(curr->children, new_value, key_idx);
 	else
 	    ll_index_insert(curr->children, new_child, new_child_index);
 

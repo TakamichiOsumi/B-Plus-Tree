@@ -34,21 +34,13 @@ employee_key_compare(void *key1, void *key2){
 static void
 employee_free(void *data){}
 
-static void *
-employee_key_access_from_employee(void *data){
-    return data;
-}
-
 static void
 records_bpt_test(){
     bpt_tree *tree;
-    uintptr_t i, records_num = 64;
+    uintptr_t i, records_num = 1024;
     employee *emp, *emp_ary;
 
     tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    employee_key_access_from_employee,
 		    employee_key_compare,
 		    employee_free,
 		    3);
