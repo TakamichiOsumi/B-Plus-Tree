@@ -28,16 +28,16 @@ typedef struct bpt_node {
     /*
      * Keys
      *
-     * The max number of keys is 'max_children - 1'.
+     * The max number of keys is 'max_keys'.
      */
     linked_list *keys;
 
     /*
      * Children
      *
-     * The max number of children is 'max_children'. Both
-     * internal nodes and the root node point to other lower nodes.
-     * Otherwise, this member points to inserted records.
+     * The max number of children is equal to 'max_keys' if this node
+     * is a leaf node. The number is 'max_keys + 1' if this is an
+     * internal node or root node.
      */
     linked_list *children;
 
