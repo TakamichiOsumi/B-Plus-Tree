@@ -15,12 +15,16 @@
 #define KEY_LEN(n) (ll_get_length(n->keys))
 #define GET_MIN_KEY_NUM(max_keys)				\
     ((max_keys % 2 == 0) ? (max_keys / 2 - 1) : (max_keys / 2))
+#define ITER_BPT_KEY(node) \
+    ll_get_iter_data(node->keys)
 
 /* Macros for children */
 #define CHILDREN_LEN(n) (ll_get_length(n->children))
 #define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
 #define GET_MIN_CHILDREN_NUM(max_keys)				\
     ((max_keys % 2 == 0) ? (max_keys / 2) : (max_keys / 2 + 1))
+#define ITER_BPT_CHILD(node) \
+    ((bpt_node *) ll_get_iter_data(node->children))
 
 /*
  * Insert this function for any updates of node to check if it
@@ -192,7 +196,7 @@ bpt_init(bpt_key_access_cb keys_key_access,
 
     if(max_keys < 2){
 	fprintf(stderr,
-		"the number of max keys should be larger than two\n");
+		"the number of max keys should be larger than or equal to two\n");
 	return NULL;
     }
 
@@ -318,6 +322,8 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 		   (uintptr_t) new_key, curr);
 	    ll_asc_insert(curr->keys, new_key);
 	    ll_tail_insert(curr->children, new_value);
+
+	    /* Verify the node property */
 	    bpt_node_validity(curr);
 	}else{
 	    /* Get a copied up key from lower node */
@@ -325,6 +331,8 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 		   new_child_index);
 	    ll_asc_insert(curr->keys, new_key);
 	    ll_index_insert(curr->children, new_child, new_child_index);
+
+	    /* Verify the node property */
 	    bpt_node_validity(curr);
 	}
     }else{
@@ -383,7 +391,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 	     * Then, update the parent member of all of the right half children.
 	     */
 	    ll_begin_iter(right_half->children);
-	    while((child = (bpt_node *) ll_get_iter_data(right_half->children)) != NULL){
+	    while((child = ITER_BPT_CHILD(right_half)) != NULL){
 		child->parent = right_half;
 	    }
 	    ll_end_iter(right_half->children);
@@ -416,6 +424,7 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 	    ll_tail_insert(new_top->children, curr);
 	    ll_tail_insert(new_top->children, right_half);
 
+	    /* Verify the node property */
 	    bpt_node_validity(new_top);
 	}else{
 	    /*
@@ -593,14 +602,14 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
     ll_begin_iter(node->keys);
     ll_begin_iter(node->children);
     while(true){
-	key_iter = ll_get_iter_data(node->keys);
-	child_iter = ll_get_iter_data(node->children);
+	key_iter = ITER_BPT_KEY(node);
+	child_iter = ITER_BPT_CHILD(node);
 
 	if (node->keys->key_compare_cb(key_iter, key) == 0)
 	    break;
     }
     /* The right child for the key is the next pointer */
-    child_iter = (bpt_node *) ll_get_iter_data(node->children);
+    child_iter = ITER_BPT_CHILD(node);
     assert(child_iter != NULL);
     ll_end_iter(node->keys);
     ll_end_iter(node->children);
@@ -710,7 +719,7 @@ bpt_merge_nodes(bpt_node *curr, bool with_right){
     assert(KEY_LEN(removed_child) == 0);
     assert(CHILDREN_LEN(removed_child) == 0);
     ll_begin_iter(curr->parent->children);
-    while((curr_child = ll_get_iter_data(curr->parent->children)) != NULL){
+    while((curr_child = ITER_BPT_CHILD(curr->parent)) != NULL){
 	if (curr_child == removed_child)
 	    assert(0);
     }
@@ -736,15 +745,15 @@ bpt_replace_index(bpt_node *curr, bool from_right){
      */
     ll_begin_iter(curr->parent->keys);
     ll_begin_iter(curr->parent->children);
-    prev_index = replaced_index = ll_get_iter_data(curr->parent->keys);
-    child = ll_get_iter_data(curr->parent->children);
+    prev_index = replaced_index = ITER_BPT_KEY(curr->parent);
+    child = ITER_BPT_CHILD(curr->parent);
     while(true){
 	if (from_right && child == curr){
 	    /*
 	     * If we borrow from the right child, then the
 	     * current 'replaced_index' should be removed.
 	     */
-	    right_child = ll_get_iter_data(curr->parent->children);
+	    right_child = ITER_BPT_CHILD(curr->parent);
 	    break;
 	}else if (!from_right && child == curr){
 	    /*
@@ -756,8 +765,8 @@ bpt_replace_index(bpt_node *curr, bool from_right){
 	    break;
 	}
 	prev_index = replaced_index;
-	replaced_index = ll_get_iter_data(curr->parent->keys);
-	child = ll_get_iter_data(curr->parent->children);
+	replaced_index = ITER_BPT_KEY(curr->parent);
+	child = ITER_BPT_CHILD(curr->parent);
     }
     ll_end_iter(curr->parent->keys);
     ll_end_iter(curr->parent->children);
@@ -780,14 +789,14 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
 
     ll_begin_iter(left->parent->keys);
     ll_begin_iter(left->parent->children);
-    key = ll_get_iter_data(left->parent->keys);
-    child = ll_get_iter_data(left->parent->children);
+    key = ITER_BPT_KEY(left->parent);
+    child = ITER_BPT_CHILD(left->parent);
     while(true){
 	if (child == left)
 	    break;
 	/* Iterate the next pair of key and child */
-	key = ll_get_iter_data(left->parent->keys);
-	child = ll_get_iter_data(left->parent->children);
+	key = ITER_BPT_KEY(left->parent);
+	child = ITER_BPT_CHILD(left->parent);
     }
     assert(right == ll_get_iter_data(left->parent->children));
     ll_end_iter(left->parent->keys);
@@ -807,12 +816,12 @@ bpt_delete_key_value_from_leaf(bpt_node *leaf, void *removed_key){
     assert(leaf->is_leaf == true);
 
     ll_begin_iter(leaf->keys);
-    key = ll_get_iter_data(leaf->keys);
+    key = ITER_BPT_KEY(leaf);
     while(true){
 	if (key == removed_key)
 	    break;
 	/* Move to the next key */
-	key = ll_get_iter_data(leaf->keys);
+	key = ITER_BPT_KEY(leaf);
 	delete_index++;
     }
     ll_end_iter(leaf->keys);
@@ -901,9 +910,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	     *
 	     * In this case, obtain the minimum value from the left child
 	     * again and utilize it as the key value added to the previous
-	     * node.
-	     *
-	     * This ensures indexes are stored correctly.
+	     * node. This ensures indexes are stored correctly.
 	     */
 	    child = (bpt_node *) ll_remove_first_data(curr->children);
 	    min_key = bpt_ref_subtree_minimum_key(child);
@@ -1017,6 +1024,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	printf("debug : removed key = '%lu' on the leaf node\n",
 	       (uintptr_t) removed_key);
 
+	/* Verify the node property */
 	bpt_node_validity(curr);
     }else{
 	/*
@@ -1035,6 +1043,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 		   (uintptr_t) removed_key, (uintptr_t) key);
 	    ll_asc_insert(curr->keys, key);
 
+	    /* Verify the node property */
 	    bpt_node_validity(curr);
 	}
     }
@@ -1081,6 +1090,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 		    /* Update the parent's index */
 		    bpt_replace_index(curr, false);
 
+		    /* Verify the node property */
 		    bpt_node_validity(curr);
 
 		    /* Continue to update the indexes. Go up by recursive call */
@@ -1118,6 +1128,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 		    printf("debug : the new current node's key = %lu, new parent's index key = %lu\n",
 			   (uintptr_t) middle_key, (uintptr_t) largest_key);
 
+		    /* Verify the node property */
 		    bpt_node_validity(curr);
 		}
 	    }
@@ -1148,11 +1159,13 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 		    /* Update the parent's index */
 		    bpt_replace_index(curr, true);
 
+		    /* Verify the node property */
 		    bpt_node_validity(curr);
 
 		    /* Continue to update the indexes. Go up by recursive call */
 		    if (!curr->is_root)
 			bpt_delete_internal(bpt, curr->parent, removed_key, record);
+
 		    return;
 		}else{
 		    /* Borrowing between the internal nodes */
@@ -1173,13 +1186,15 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 				  curr->keys);
 
 		    /* Whenever we borrow an internal node's child, update its attributes */
-		    assert((borrowed_child = (bpt_node *) ll_remove_first_data(curr->next->children)) != NULL);
+		    borrowed_child = (bpt_node *) ll_remove_first_data(curr->next->children);
+		    assert(borrowed_child != NULL);
 		    borrowed_child->parent = curr;
 		    ll_tail_insert(curr->children, borrowed_child);
 
 		    printf("debug : the new current node's key = %lu, the new parent's index key = %lu\n",
 			   (uintptr_t) middle_key, (uintptr_t) smallest_key);
 
+		    /* Verify the node property */
 		    bpt_node_validity(curr);
 		}
 	    }
@@ -1193,7 +1208,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	    if (has_left_sibling){
 		/*
 		 * Note that after the merge with the left node,
-		 * the current (right) node will be freed. Then,
+		 * the current (right) node will be free-ed. Then,
 		 * refer to any attributes of 'curr' won't be
 		 * allowed after the bpt_merge_nodes(). Save
 		 * the parameter necessary for any subsequent
@@ -1219,6 +1234,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 			   (uintptr_t) deleted_key);
 		}
 
+		/* Verify the node property */
 		bpt_node_validity(prev);
 
 		/*
@@ -1256,6 +1272,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 			   (uintptr_t) deleted_key);
 		}
 
+		/* Verify the node property */
 		bpt_node_validity(curr);
 	    }else{
 		printf("debug : merging nodes didn't happen either\n");
@@ -1308,7 +1325,7 @@ bpt_destroy(bpt_tree *bpt){
 
     while(curr != NULL){
 	/* Remember the leftmost node */
-	leftmost = curr->is_leaf == true ? NULL : bpt_ref_index_child(curr, 0);
+	leftmost = curr->is_leaf ? NULL : bpt_ref_index_child(curr, 0);
 
 	/* Free nodes vertically */
 	while(true){
