@@ -457,7 +457,7 @@ bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){
     bpt_node *leaf_node;
     bool found_same_key = false;
 
-    found_same_key = bpt_search(bpt, new_key, &leaf_node);
+    found_same_key = bpt_search(bpt, new_key, &leaf_node, NULL);
 
     /* Prohibit duplicate keys */
     if (found_same_key)
@@ -469,8 +469,44 @@ bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){
     }
 }
 
+/*
+ * Refer to or delete the pair of key and record on the leaf node.
+ *
+ * The exec_delete flag decides whether the pair is deleted or not.
+ */
+static void *
+bpt_get_key_value_from_leaf(bpt_node *leaf, bool exec_delete, void *search_key){
+    void *key, *record;
+    int delete_index = 0;
+
+    assert(leaf->is_leaf == true);
+
+    ll_begin_iter(leaf->keys);
+    key = ITER_BPT_KEY(leaf);
+    while(true){
+	if (key == search_key)
+	    break;
+	/* Move to the next key */
+	key = ITER_BPT_KEY(leaf);
+	delete_index++;
+    }
+    ll_end_iter(leaf->keys);
+
+    if (!exec_delete)
+	record = ll_ref_index_data(leaf->children, delete_index);
+    else{
+	(void) ll_index_remove(leaf->keys, delete_index);
+	record = ll_index_remove(leaf->children, delete_index);
+    }
+
+    assert(record != NULL);
+
+    return record;
+}
+
 static bool
-bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
+bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node,
+		    void **record){
     linked_list *keys;
     int diff, children_index;
 
@@ -497,7 +533,7 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
     /*
      * This is an empty node. This code path gets hit when one tries to
      * search tree's root with no data. Need to address since any initial
-     * insert depends on the search of the root wihout data.
+     * insert depends on the search of the root without data.
      */
     if (KEY_LEN(curr) == 0)
 	return false;
@@ -516,11 +552,15 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
 	if (curr->is_leaf){
 	    printf("debug : bpt_search_internal() found the same key in leaf node\n");
 
+	    /* When the pointer to the record is required, set it for user */
+	    if (record != NULL)
+		*record = bpt_get_key_value_from_leaf(curr, false, new_key);
+
 	    return true;
 	}else{
 	    /* Search for the right child */
 	    return bpt_search_internal(bpt_ref_index_child(curr, children_index + 1),
-				       new_key, leaf_node);
+				       new_key, leaf_node, record);
 	}
     }else if (diff == 1){
 	/*
@@ -533,7 +573,7 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
 	else{
 	    /* Search for the left child */
 	    return bpt_search_internal(bpt_ref_index_child(curr, children_index),
-				       new_key, leaf_node);
+				       new_key, leaf_node, record);
 	}
     }else{
 	/* The key was bigger than all the existing keys */
@@ -543,7 +583,7 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
 	    /* Search for the rightmost child */
 	    return bpt_search_internal(bpt_ref_index_child(curr,
 							   CHILDREN_LEN(curr) - 1),
-				       new_key, leaf_node);
+				       new_key, leaf_node, record);
 	}
     }
 }
@@ -551,13 +591,14 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node){
 /*
  * Wrapper function of bpt_search_internal().
  *
- * Allow the leaf_node to be null, when user doesn't need to interact
- * with the leaf node.
+ * Allow 'leaf_node' and 'record' to be null, when user doesn't need to
+ * interact with the leaf node or its value.
  */
 bool
-bpt_search(bpt_tree *bpt, void* new_key, bpt_node **leaf_node){
+bpt_search(bpt_tree *bpt, void* new_key, bpt_node **leaf_node,
+	   void **record){
     if (bpt != NULL && bpt->root != NULL && new_key != NULL)
-	return bpt_search_internal(bpt->root, new_key, leaf_node);
+	return bpt_search_internal(bpt->root, new_key, leaf_node, record);
 
     return false;
 }
@@ -805,35 +846,6 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
     return key;
 }
 
-/*
- * Delete the pair of key and record on the leaf node.
- */
-static void *
-bpt_delete_key_value_from_leaf(bpt_node *leaf, void *removed_key){
-    void *key, *record;
-    int delete_index = 0;
-
-    assert(leaf->is_leaf == true);
-
-    ll_begin_iter(leaf->keys);
-    key = ITER_BPT_KEY(leaf);
-    while(true){
-	if (key == removed_key)
-	    break;
-	/* Move to the next key */
-	key = ITER_BPT_KEY(leaf);
-	delete_index++;
-    }
-    ll_end_iter(leaf->keys);
-
-    /* Discard the apparent removed key */
-    (void) ll_index_remove(leaf->keys, delete_index);
-
-    assert((record = ll_index_remove(leaf->children, delete_index)) != NULL);
-
-    return record;
-}
-
 static void
 bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 		    void **record){
@@ -1015,10 +1027,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	     * Discard the corresponding record when user indicates
 	     * the record is not necessary.
 	     */
-	    (void) bpt_delete_key_value_from_leaf(curr, removed_key);
+	    (void) bpt_get_key_value_from_leaf(curr, true,
+					       removed_key);
 	}else{
-	    record = bpt_delete_key_value_from_leaf(curr,
-						    removed_key);
+	    *record = bpt_get_key_value_from_leaf(curr, true,
+						  removed_key);
 	}
 
 	printf("debug : removed key = '%lu' on the leaf node\n",
@@ -1292,7 +1305,7 @@ bpt_delete(bpt_tree *bpt, void *key, void **record){
 
     printf("debug : bpt_delete() for root = %p with key = %p\n", bpt->root, key);
 
-    found_same_key = bpt_search(bpt, key, &leaf_node);
+    found_same_key = bpt_search(bpt, key, &leaf_node, NULL);
 
     /* Remove the found key */
     if (found_same_key){

@@ -59,7 +59,7 @@ loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
 
     for (i = 0; i < count; i++){
 	node = NULL;
-	assert(bpt_search(bpt, (void *) answers[i], &node) == true);
+	assert(bpt_search(bpt, (void *) answers[i], &node, NULL) == true);
 	assert(node != NULL);
     }
 }
@@ -173,23 +173,23 @@ search_single_node_test(void){
 
     /* Exact key match */
     node = NULL;
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     assert(node == tree->root);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 2, &node) == true);
+    assert(bpt_search(tree, (void *) 2, &node, NULL) == true);
     assert(node == tree->root);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 4, &node) == true);
+    assert(bpt_search(tree, (void *) 4, &node, NULL) == true);
     assert(node == tree->root);
 
     /* Non-existing keys */
     node = NULL;
-    assert(bpt_search(tree, (void *) 50, &node) == false);
+    assert(bpt_search(tree, (void *) 50, &node, NULL) == false);
     assert(node == tree->root);
     node = NULL;
-    assert(bpt_search(tree, (void *) 5, &node) == false);
+    assert(bpt_search(tree, (void *) 5, &node, NULL) == false);
     assert(node == tree->root);
 
     /* Clean up */
@@ -238,24 +238,24 @@ search_two_depth_nodes_test(void){
 
     /* Now, do the search of existing keys */
     node = NULL;
-    assert(bpt_search(tree, (void *) 2, &node) == true);
+    assert(bpt_search(tree, (void *) 2, &node, NULL) == true);
     assert(node == left);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 5, &node) == true);
+    assert(bpt_search(tree, (void *) 5, &node, NULL) == true);
     assert(node == right);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 6, &node) == true);
+    assert(bpt_search(tree, (void *) 6, &node, NULL) == true);
     assert(node == right);
 
     /* Search non-existing keys */
     node = NULL;
-    assert(bpt_search(tree, (void *) 1, &node) == false);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == false);
     assert(node == left);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 7, &node) == false);
+    assert(bpt_search(tree, (void *) 7, &node, NULL) == false);
     assert(node == right);
 
     /* Clean up */
@@ -364,36 +364,36 @@ search_three_depth_nodes_test(void){
 
     /* Search for existing keys */
     node = NULL;
-    assert(bpt_search(tree, (void *) 13, &node) == true);
+    assert(bpt_search(tree, (void *) 13, &node, NULL) == true);
     assert(node == second_from_right);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 16, &node) == true);
+    assert(bpt_search(tree, (void *) 16, &node, NULL) == true);
     assert(node == rightmost);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 25, &node) == true);
+    assert(bpt_search(tree, (void *) 25, &node, NULL) == true);
     assert(node == rightmost);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 11, &node) == true);
+    assert(bpt_search(tree, (void *) 11, &node, NULL) == true);
     assert(node == middle);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 4, &node) == true);
+    assert(bpt_search(tree, (void *) 4, &node, NULL) == true);
     assert(node == leftmost);
 
     /* Search for non-existing keys */
     node = NULL;
-    assert(bpt_search(tree, (void *) 2, &node) == false);
+    assert(bpt_search(tree, (void *) 2, &node, NULL) == false);
     assert(node == leftmost);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 14, &node) == false);
+    assert(bpt_search(tree, (void *) 14, &node, NULL) == false);
     assert(node == second_from_right);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 30, &node) == false);
+    assert(bpt_search(tree, (void *) 30, &node, NULL) == false);
     assert(node == rightmost);
 
     bpt_dump_whole_tree(tree);
@@ -425,8 +425,8 @@ insert_and_create_two_depth_tree(void){
 
     /* After the node split, are all nodes correctly connected ? */
     right = left = NULL;
-    assert(bpt_search(tree, (void *) 1, &left) == true);
-    assert(bpt_search(tree, (void *) 5, &right) == true);
+    assert(bpt_search(tree, (void *) 1, &left, NULL) == true);
+    assert(bpt_search(tree, (void *) 5, &right, NULL) == true);
     assert(left->next == right);
     assert(left->parent == tree->root);
     assert(ll_get_length(tree->root->keys) == 1); /* 4 */
@@ -469,27 +469,27 @@ insert_and_create_three_depth_tree(void){
 
     /* Debug */
     node = NULL;
-    assert(bpt_search(tree, (void *) 4, &node) == true);
+    assert(bpt_search(tree, (void *) 4, &node, NULL) == true);
 
     /* Check the order of leaf node values */
     full_keys_comparison_test(node, sorted_output);
 
     /* Search failure */
-    assert(bpt_search(tree, (void *) 0, NULL) == false);
-    assert(bpt_search(tree, (void *) 17, NULL) == false);
-    assert(bpt_search(tree, (void *) 35, NULL) == false);
+    assert(bpt_search(tree, (void *)  0, NULL, NULL) == false);
+    assert(bpt_search(tree, (void *) 17, NULL, NULL) == false);
+    assert(bpt_search(tree, (void *) 35, NULL, NULL) == false);
 
     /* Search success */
     node = NULL;
-    assert(bpt_search(tree, (void *) 20, &node) == true);
+    assert(bpt_search(tree, (void *) 20, &node, NULL) == true);
     assert(node != NULL);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 30, &node) == true);
+    assert(bpt_search(tree, (void *) 30, &node, NULL) == true);
     assert(node != NULL);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 12, &node) == true);
+    assert(bpt_search(tree, (void *) 12, &node, NULL) == true);
     assert(node != NULL);
 
     /* Clean up */
@@ -522,7 +522,7 @@ test_even_number_max_keys(void){
 	assert(bpt_insert(tree, (void *) answer, &emp) == true);
 
     node = NULL;
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
 
     /* Iterate all the registered keys */
     full_keys_comparison_test(node, answers);
@@ -532,7 +532,7 @@ test_even_number_max_keys(void){
 
     /* Iterate in reverse order */
     node = NULL;
-    assert(bpt_search(tree, (void *) 20, &node) == true);
+    assert(bpt_search(tree, (void *) 20, &node, NULL) == true);
     assert(node != NULL);
 
     /* Check the doubly linked list of leaf nodes */
@@ -614,7 +614,7 @@ remove_from_two_depth_tree(void){
 
     /* Basic check of the left child */
     node = NULL;
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     assert(ll_get_length(node->keys) == 2);
 
     /* Check the current all leaves */
@@ -622,24 +622,24 @@ remove_from_two_depth_tree(void){
 
     /* The middle child */
     node = NULL;
-    assert(bpt_search(tree, (void *) 3, &node) == true);
+    assert(bpt_search(tree, (void *) 3, &node, NULL) == true);
     assert(ll_get_length(node->keys) == 2);
 
     /* The right child */
     node = NULL;
-    assert(bpt_search(tree, (void *) 5, &node) == true);
+    assert(bpt_search(tree, (void *) 5, &node, NULL) == true);
     assert(ll_get_length(node->keys) == 2);
 
     /* Removal of one key from the middle child */
     node = NULL;
     assert(bpt_delete(tree, (void *) 4, NULL) == true);
-    assert(bpt_search(tree, (void *) 3, &node) == true);
+    assert(bpt_search(tree, (void *) 3, &node, NULL) == true);
     assert(ll_get_length(node->keys) == 1);
 
     /* Removal to trigger borrowing from left child */
     node = NULL;
     assert(bpt_delete(tree, (void *) 3, NULL) == true);
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     full_keys_comparison_test(node, leaves1);
 
     /*
@@ -668,7 +668,7 @@ remove_from_two_depth_tree(void){
      */
     node = NULL;
     assert(bpt_delete(tree, (void *) 2, NULL) == true);
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     full_keys_comparison_test(node, leaves2);
 
     /* Check the index updates */
@@ -678,7 +678,7 @@ remove_from_two_depth_tree(void){
     /* Confirm that the remaining index key is only 6 after 5 removal */
     node = NULL;
     assert(bpt_delete(tree, (void *) 5, NULL) == true);
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     assert(ll_get_length(node->parent->keys) == 1);
     assert(node->parent->keys->head->data == (void *) 6);
 
@@ -687,14 +687,14 @@ remove_from_two_depth_tree(void){
 
     /* Ensure the two nodes are different but share the same parent */
     node = node2 = NULL;
-    assert(bpt_search(tree, (void *) 1, &node) == true);
-    assert(bpt_search(tree, (void *) 6, &node2) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
+    assert(bpt_search(tree, (void *) 6, &node2, NULL) == true);
     assert(node->parent == node2->parent);
 
     /* Remove the value to trigger promotion */
     node = NULL;
     assert(bpt_delete(tree, (void *) 6, NULL) == true);
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     assert(node->is_root == true);
 
     /* Clean up */
@@ -739,7 +739,7 @@ remove_from_three_depth_tree(){
     node = NULL;
     assert(ll_get_length(tree->root->keys) == 1);
     assert(ll_get_length(tree->root->children) == 2);
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     assert(node->parent->parent->is_root);
     assert(ll_get_length(node->parent->keys) == 2);
     assert(ll_get_length(node->next->next->next->parent->keys) == 2);
@@ -780,7 +780,7 @@ remove_from_three_depth_tree(){
     assert(bpt_delete(tree, (void *) 31, NULL) == true);
 
     /* The leaf nodes */
-    assert(bpt_search(tree, (void *) 1, &node));
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     full_keys_comparison_test(node, leaves0);
     loop_bpt_search(tree, 8, leaves0);
 
@@ -791,18 +791,18 @@ remove_from_three_depth_tree(){
     loop_bpt_search(tree, 7, leaves1);
 
     node = NULL;
-    bpt_search(tree, (void *) 1, &node);
+    bpt_search(tree, (void *) 1, &node, NULL);
     full_keys_comparison_test(node, leaves1);
 
     /* Test the parent attributes for debugging */
     node = NULL;
-    bpt_search(tree, (void *) 1, &node);
+    bpt_search(tree, (void *) 1, &node, NULL);
     assert(node->parent == node->next->parent &&
 	   node->next->parent == node->next->next->parent);
     assert(node->parent != node->next->next->next->parent);
 
     node = NULL;
-    bpt_search(tree, (void *) 20, &node);
+    bpt_search(tree, (void *) 20, &node, NULL);
     assert(node->parent == node->next->parent);
 
     /* Shrinks the height of the tree */
@@ -828,7 +828,7 @@ remove_from_three_depth_tree(){
 
     /* Check the leaves just in case */
     node = NULL;
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     full_keys_comparison_test(node, leaves3);
 
     assert(bpt_delete(tree, (void *) 7, NULL) == true);
@@ -836,7 +836,7 @@ remove_from_three_depth_tree(){
 
     loop_bpt_search(tree, 5, leaves4);
 
-    bpt_search(tree, (void *) 17, &node);
+    bpt_search(tree, (void *) 17, &node, NULL);
     assert(ll_get_length(node->keys) == 2);
 
     /* Trigger a borrowing from right child */
@@ -848,7 +848,7 @@ remove_from_three_depth_tree(){
 
     /* Except for one key, all keys should be removed */
     node = NULL;
-    assert(bpt_search(tree, (void *) 1, &node) == true);
+    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     assert(node->parent == NULL);
     assert(node->prev == NULL);
     assert(node->next == NULL);
@@ -878,14 +878,14 @@ keys_test_more_data(uint16_t max_keys){
 	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
 
     for (i = max - 1; i >= 1; i--)
-	assert(bpt_search(tree, (void *) i, NULL) == true);
+	assert(bpt_search(tree, (void *) i, NULL, NULL) == true);
 
     for (i = 1; i < max; i++){
 	printf("debug : app deletes key = %lu\n", i);
 	assert(bpt_delete(tree, (void *) i, NULL) == true);
 	/* Detect any incorrect tree structure immediately */
 	for (j = i + 1; j < max; j++)
-	    assert(bpt_search(tree, (void *) j, NULL) == true);
+	    assert(bpt_search(tree, (void *) j, NULL, NULL) == true);
     }
 
     assert(ll_get_length(tree->root->keys) == 0);
@@ -901,7 +901,7 @@ keys_test_more_data(uint16_t max_keys){
 	assert(bpt_delete(tree, (void *) i, NULL) == true);
 	/* Detect any incorrect tree structure immediately */
 	for (j = i - 1; j >= 1; j--)
-	    assert(bpt_search(tree, (void *) j, NULL) == true);
+	    assert(bpt_search(tree, (void *) j, NULL, NULL) == true);
     }
 
     assert(ll_get_length(tree->root->keys) == 0);
