@@ -7,18 +7,19 @@
 #include "Linked-List/linked_list.h"
 
 /*
+ * Build one unique key from multiple keys.
+ */
 typedef struct bpt_key {
     uint16_t key_size;
     void *key;
 } bpt_key;
-*/
 
 typedef struct bpt_tree bpt_tree;
 
 /*
  * B+ Tree Node
  *
- * Representation of root, internal or leaf nodes
+ * Representation of root, internal or leaf nodes.
  */
 typedef struct bpt_node {
 
