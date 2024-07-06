@@ -57,7 +57,7 @@ bpt_dump_whole_tree(bpt_tree *bpt){
 
     while(curr != NULL){
 	/* Remember the leftmost node */
-	leftmost = curr->is_leaf == true ? NULL : bpt_ref_index_child(curr, 0);
+	leftmost = curr->is_leaf ? NULL : bpt_ref_index_child(curr, 0);
 
 	/* Dump keys of all vertical nodes */
 	printf("debug : ");
@@ -67,11 +67,9 @@ bpt_dump_whole_tree(bpt_tree *bpt){
 	    for (i = 0; i < KEY_LEN(curr); i++){
 		printf("%lu, ",
 		       (uintptr_t) ll_get_iter_data(curr->keys));
-		/* TODO : show each record, if this is a leaf node */
 	    }
 	    ll_end_iter(curr->keys);
 	    printf("] ");
-	    /* printf("] (%p) ", curr); */ /* verbose */
 
 	    curr = curr->next;
 	    if (curr == NULL)
@@ -409,9 +407,8 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
 	     * Then, update the parent member of all of the right half children.
 	     */
 	    ll_begin_iter(right_half->children);
-	    while((child = ITER_BPT_CHILD(right_half)) != NULL){
+	    while((child = ITER_BPT_CHILD(right_half)) != NULL)
 		child->parent = right_half;
-	    }
 	    ll_end_iter(right_half->children);
 
 	    /* Use the utility for debug */
@@ -470,6 +467,9 @@ bpt_insert_internal(bpt_tree *bpt, bpt_node *curr, void *new_key,
     }
 }
 
+/*
+ * Wrapper function of bpt_insert_internal().
+ */
 bool
 bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){
     bpt_node *leaf_node;
@@ -510,9 +510,11 @@ bpt_get_key_value_from_leaf(bpt_node *leaf, bool exec_delete, void *search_key){
     }
     ll_end_iter(leaf->keys);
 
-    if (!exec_delete)
+    if (!exec_delete){
+	/* The caller requires only record reference */
 	record = ll_ref_index_data(leaf->children, delete_index);
-    else{
+    }else{
+	/* The caller requires deletion of the key value pair */
 	(void) ll_index_remove(leaf->keys, delete_index);
 	record = ll_index_remove(leaf->children, delete_index);
     }
@@ -698,9 +700,8 @@ bpt_merge_nodes(bpt_node *curr, bool with_right){
 	while(CHILDREN_LEN(curr->next) > 0){
 	    curr_child = (bpt_node *) ll_remove_first_data(curr->next->children);
 	    /* If this node is an internal node, update the children's parents */
-	    if (!curr->is_leaf){
+	    if (!curr->is_leaf)
 		curr_child->parent = curr;
-	    }
 	    ll_tail_insert(curr->children, curr_child);
 	}
 	merged_children = curr->children;
@@ -712,9 +713,8 @@ bpt_merge_nodes(bpt_node *curr, bool with_right){
 	while(CHILDREN_LEN(curr) > 0){
 	    curr_child = (bpt_node *) ll_remove_first_data(curr->children);
 	    /* Update children parent member if necessary */
-	    if (!curr->is_leaf){
+	    if (!curr->is_leaf)
 		curr_child->parent = curr->prev;
-	    }
 	    ll_tail_insert(curr->prev->children, curr_child);
 	}
 	merged_children = curr->prev->children;
