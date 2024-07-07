@@ -6,11 +6,20 @@
 
 #include "Linked-List/linked_list.h"
 
-/* Define all key types to support */
+/*
+ * Define key sizes of fixed-size variables
+ */
+#define INT_SIZE (sizeof(INT))
+#define DOUBLE_SIZE (sizeof(DOUBLE))
+#define BOOLEAN_SIZE (sizeof(bool))
+
+/*
+ * Define all key types to support
+ */
 typedef enum key_type {
     INT,
     DOUBLE,
-    VAR,
+    STRING,
     BOOLEAN,
 } key_type;
 

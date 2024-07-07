@@ -8,8 +8,6 @@
 /* Macros for b+ tree node */
 #define HAVE_SAME_PARENT(n1, n2)				\
     (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
-#define bpt_ref_index_child(curr, index)			\
-    ((bpt_node *) ll_ref_index_data(curr->children, index))
 
 /* Macros for key */
 #define KEY_LEN(n) (ll_get_length(n->keys))
@@ -27,12 +25,23 @@
     ((bpt_node *) ll_get_iter_data(node->children))
 
 /*
- * Insert this function for any updates of node to check if it
+ * Return the bpt_node * child from the node by specified index
+ * value.
+ */
+static bpt_node *
+bpt_ref_index_child(bpt_node *curr, int index){
+    assert(curr->is_leaf == false);
+
+    return ((bpt_node *) ll_ref_index_data(curr->children, index));
+}
+
+/*
+ * Insert this function for any node updates to check whether it
  * satisfies either valid condition below.
  *
- * (1) Have the same numbers of keys and values if it's a leaf node
- * or
- * (2) Have one more indexes than children if it's a internal node
+ * The node has the same numbers of keys and values if it's a
+ * leaf node. Or, the node has one more indexes than children
+ * if it's a root or internal node.
  */
 void
 bpt_node_validity(bpt_node *node){
