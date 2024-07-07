@@ -39,7 +39,7 @@ clean:
 	@for dir in $(DEPENDENCY_LIB); do cd $$dir; make clean; cd ..; done
 
 test: $(OBJ_COMPONENTS) $(KEYS_APP) $(RECORDS_APP) $(COMPOSITE_KEYS_APP)
-	@echo "Will run some tests. This will take several seconds..."
+	@echo "Will run some tests. This will take some time..."
 	@./tests/$(RECORDS_APP)        &> /dev/null && echo "Success when the value of records management tests is zero >>> $$?"
 	@./tests/$(KEYS_APP)           &> /dev/null && echo "Success when the value of keys management tests is zero >>> $$?"
 	@./tests/$(COMPOSITE_KEYS_APP) &> /dev/null && echo "Success when the value of composite keys tests is zero >>> $$?"
