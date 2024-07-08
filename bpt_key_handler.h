@@ -28,9 +28,16 @@ typedef enum key_type {
  * Define one key for each key type.
  */
 typedef struct bpt_key {
+    /* Key data type */
     key_type type;
+
+    /*
+     * Usually fixed size.
+     *
+     * But, length is variable when the type is STRING.
+     */
     uint16_t key_size;
-    void *key;
+
     void *(*key_handler)(void *);
 } bpt_key;
 
@@ -61,5 +68,8 @@ void *bkh_double_write(void *key_sequence, void *double_ptr);
 void *bkh_double_read(void *key_sequence, void *double_ptr);
 void *bkh_bool_write(void *key_sequence, void *bool_ptr);
 void *bkh_bool_read(void *key_sequence, void *bool_ptr);
+void *bkh_str_write(void *key_sequence, void *str_ptr);
+void *bkh_str_read(void *key_sequence, void *str_ptr);
+
 
 #endif

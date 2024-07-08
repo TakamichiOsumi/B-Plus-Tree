@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../bpt_key_handler.h"
 #include "../b_plus_tree.h"
 
@@ -14,7 +15,7 @@ test_int_handler(void){
     bkh_int_write(key, (void *) &write);
     bkh_int_read(key, (void *) &read);
 
-    printf("key = %d\n", *((int *) key));
+    printf("integer key = %d\n", *((int *) key));
     assert(read == write);
 
     bkh_free(key);
@@ -30,7 +31,7 @@ test_double_handler(void){
     bkh_double_write(key, (void *) &write);
     bkh_double_read(key, (void *) &read);
 
-    printf("Key = %f\n", *((double *) key));
+    printf("double key = %f\n", *((double *) key));
 
     assert(read == write);
 
@@ -47,11 +48,25 @@ test_bool_handler(void){
     bkh_bool_write(key, (void *) &write);
     bkh_bool_read(key, (void *) &read);
 
-    printf("Key = %s\n", *((bool *) key) == true ? "true" : "false");
+    printf("bool key = %s\n", *((bool *) key) == true ? "true" : "false");
 
     assert(write == read);
 
     bkh_free(key);
+}
+
+static void
+test_string_handler(){
+    void *key;
+    char *src = "Hello World", *dest;
+
+    key = bkh_malloc(strlen(src) + 1);
+    dest = bkh_malloc(strlen(src) + 1);
+
+    bkh_str_write(key, (void *) src);
+    bkh_str_read(key, (void *) dest);
+
+    assert(strcmp(src, dest) == 0);
 }
 
 static void
@@ -64,6 +79,9 @@ test_basic_key_handlers(void){
 
     printf("> Test bool handler\n");
     test_bool_handler();
+
+    printf("> Test string handler\n");
+    test_string_handler();
 }
 
 int

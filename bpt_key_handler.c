@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "b_plus_tree.h"
 
 void *
@@ -96,6 +97,56 @@ bkh_bool_read(void *key_sequence, void *bool_ptr){
 
     *bp = *((bool *) key_sequence);
     key_sequence += BOOLEAN_SIZE;
+
+    return key_sequence;
+}
+
+/*
+ * Write a string value from 'str_ptr' to 'key_sequence'.
+ *
+ * The caller must ensure that the str_ptr has ended with
+ * null-termination, since this function depends on strlen().
+ */
+void *
+bkh_str_write(void *key_sequence, void *str_ptr){
+    char *cp = (char *) key_sequence,
+	*s = (char *) str_ptr;
+    int i, str_len = strlen(s);
+
+    for (i = 0; i < str_len; i++){
+	*cp = *s;
+	cp++;
+	s++;
+    }
+    *cp = '\0';
+
+    /* printf("The written data : '%s'\n", (char *) key_sequence); */
+
+    key_sequence += (str_len + 1);
+
+    return key_sequence;
+}
+
+/*
+ * Read a string value from 'key_sequence' to 'str_ptr'
+ *
+ * The caller must ensure that the str_ptr has enough
+ * space to copy the string in key_sequence.
+ */
+void *
+bkh_str_read(void *key_sequence, void *str_ptr){
+    char *cp = (char *) key_sequence,
+	*s = (char *) str_ptr;
+    int i, str_len = strlen(cp);
+
+    for (i = 0; i < str_len; i++){
+	*s = *cp;
+	s++;
+	cp++;
+    }
+    *s = '\0';
+
+    key_sequence += (str_len + 1);
 
     return key_sequence;
 }
