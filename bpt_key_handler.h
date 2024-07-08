@@ -2,6 +2,7 @@
 #define __BPT_KEY_HANDLER__
 
 #include <stdint.h>
+
 #include "Linked-List/linked_list.h"
 
 /*
@@ -45,7 +46,7 @@ typedef struct composite_key_store {
     int full_key_size;
 
     /*
-     * Lists of key_element
+     * Lists of bpt_key
      */
     linked_list *key_attributes;
 
@@ -53,7 +54,12 @@ typedef struct composite_key_store {
 
 void *bkh_malloc(size_t size);
 void bkh_free(void *p);
-void *bkh_append_int(void *key_sequence, void *int_ptr);
-void *bkh_int_handler(void *key_sequence, void *int_ptr);
+
+void *bkh_int_write(void *key_sequence, void *int_ptr);
+void *bkh_int_read(void *key_sequence, void *int_ptr);
+void *bkh_double_write(void *key_sequence, void *double_ptr);
+void *bkh_double_read(void *key_sequence, void *double_ptr);
+void *bkh_bool_write(void *key_sequence, void *bool_ptr);
+void *bkh_bool_read(void *key_sequence, void *bool_ptr);
 
 #endif
