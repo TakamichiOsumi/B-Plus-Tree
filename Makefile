@@ -11,6 +11,8 @@ RECORDS_APP	= record_management_bptree
 KEY_HANDLER_APP	= key_handler_bptree
 COMPOSITE_KEYS_APP	= composite_keys_bptree
 
+FULL_TESTS	= $(KEYS_APP) $(RECORDS_APP) $(KEY_HANDLER_APP) $(COMPOSITE_KEYS_APP)
+
 LIB	= libbplustree.a
 
 all: $(LIB) $(KEYS_APP) $(RECORDS_APP) $(COMPOSITE_KEYS_APP) $(KEY_HANDLER_APP)
@@ -44,9 +46,6 @@ clean:
 		tests/$(COMPOSITE_KEYS_APP)* $(KEY_HANDLER_APP) $(LIB)
 	@for dir in $(DEPENDENCY_LIB); do cd $$dir; make clean; cd ..; done
 
-test: $(OBJ_COMPONENTS) $(KEYS_APP) $(RECORDS_APP) $(COMPOSITE_KEYS_APP)
-	@echo "Will run some tests. This will take some time..."
-	@./tests/$(RECORDS_APP)        &> /dev/null && echo "Success when the value of records management tests is zero >>> $$?"
-	@./tests/$(KEYS_APP)           &> /dev/null && echo "Success when the value of keys management tests is zero >>> $$?"
-	@./tests/$(COMPOSITE_KEYS_APP) &> /dev/null && echo "Success when the value of composite keys tests is zero >>> $$?"
-	@./tests/$(KEY_HANDLER_APP) &> /dev/null && echo "Success when the value of key handler tests is zero >>> $$?"
+test: $(OBJ_COMPONENTS) $(FULL_TESTS)
+	@echo "Run several tests. This will take some time..."
+	@for exec in $(FULL_TESTS); do ./tests/$$exec &> /dev/null && echo "Success when the value is zero >>> $$?"; done

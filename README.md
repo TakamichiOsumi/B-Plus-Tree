@@ -2,6 +2,16 @@
 
 Submodule for my other repository to enhance my self-education.
 
+## `libbplustree` library functions
+
+| Function | Description |
+| ---- | ---- |
+| bpt_init | Create a new bpt_tree * object |
+| bpt_insert | Insert one pair of key and record into bpt_tree * object  |
+| bpt_search | Search a key from bpt_tree * object |
+| bpt_delete | Delete a key and record from bpt_tree * object |
+| bpt_destory | Destroy all registered keys and records from bpt_tree * object |
+
 ## How to build and test
 
 ```
