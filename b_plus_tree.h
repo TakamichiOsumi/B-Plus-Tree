@@ -4,52 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "bpt_key_handler.h"
 #include "Linked-List/linked_list.h"
-
-/*
- * Define key sizes of fixed-size variables
- */
-#define INT_SIZE (sizeof(INT))
-#define DOUBLE_SIZE (sizeof(DOUBLE))
-#define BOOLEAN_SIZE (sizeof(bool))
-
-/*
- * Define all key types to support
- */
-typedef enum key_type {
-    INT,
-    DOUBLE,
-    STRING,
-    BOOLEAN,
-} key_type;
-
-/*
- * Define one key for each key type.
- */
-typedef struct bpt_key {
-    key_type type;
-    uint16_t key_size;
-    void *key;
-    void *(*key_handler)(void *);
-} bpt_key;
-
-/*
- * Build one unique key from multiple keys.
- *
- * Assign one composite_key_store to one b+ tree.
- */
-typedef struct composite_key_store {
-    /*
-     * Length of one sequence of unique key
-     */
-    int full_key_size;
-
-    /*
-     * Lists of key_element
-     */
-    linked_list *key_attributes;
-
-} composite_key_store;
 
 typedef struct bpt_tree bpt_tree;
 
@@ -116,7 +72,11 @@ typedef struct bpt_tree {
      */
     uint16_t max_keys;
 
+    /*
+     * Manage composite keys to build unique key
+     */
     composite_key_store key_store;
+
 } bpt_tree;
 
 void bpt_dump_whole_tree(bpt_tree *bpt);
