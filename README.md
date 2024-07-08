@@ -2,6 +2,8 @@
 
 Submodule for my other repository to enhance my self-education.
 
+The difference from the normal B+ Tree is that nodes at the same depth are connected as doubly linked list and every node has pointer to its parent additionally.
+
 ## `libbplustree` library functions
 
 | Function | Description |
@@ -26,5 +28,3 @@ Submodule for my other repository to enhance my self-education.
 ## Notes
 
 This is written to understand the basic flows of B+ Tree algorithms. In order to focus on their logics, some operations that manipulate keys and children are encapsulated by linked list library.
-
-The difference from the normal B+ Tree is that nodes at the same depth are connected as doubly linked list.
