@@ -11,7 +11,7 @@ RECORDS_APP	= record_management_bptree
 KEY_HANDLER_APP	= key_handler_bptree
 COMPOSITE_KEYS_APP	= composite_keys_bptree
 
-FULL_TESTS	= $(KEYS_APP) $(RECORDS_APP) $(KEY_HANDLER_APP) $(COMPOSITE_KEYS_APP)
+FULL_TESTS	= $(KEY_HANDLER_APP) $(KEYS_APP) $(RECORDS_APP) $(COMPOSITE_KEYS_APP)
 
 LIB	= libbplustree.a
 
