@@ -73,9 +73,9 @@ typedef struct bpt_tree {
     uint16_t max_keys;
 
     /*
-     * Manage composite keys to build unique key
+     * Manage the metadata of composite key
      */
-    composite_key_store key_store;
+    composite_key_store key_metadata;
 
 } bpt_tree;
 

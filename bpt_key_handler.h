@@ -28,6 +28,7 @@ typedef enum key_type {
  * Define one key for each key type.
  */
 typedef struct bpt_key {
+
     /* Key data type */
     key_type type;
 
@@ -39,6 +40,7 @@ typedef struct bpt_key {
     uint16_t key_size;
 
     void *(*key_handler)(void *);
+
 } bpt_key;
 
 /*
@@ -47,13 +49,14 @@ typedef struct bpt_key {
  * Assign one composite_key_store to one b+ tree.
  */
 typedef struct composite_key_store {
+
     /*
      * Length of one sequence of unique key
      */
     int full_key_size;
 
     /*
-     * Lists of bpt_key
+     * Lists of bpt_key defined above
      */
     linked_list *key_attributes;
 
