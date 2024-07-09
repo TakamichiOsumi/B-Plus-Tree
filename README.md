@@ -14,6 +14,8 @@ The difference from the normal B+ Tree is that nodes at the same depth are conne
 | bpt_delete | Delete a key and record from bpt_tree * object |
 | bpt_destory | Destroy all registered keys and records from bpt_tree * object |
 
+See the explicit function prototypes in `b_plus_tree.h`.
+
 ## How to build and test
 
 ```
