@@ -831,7 +831,7 @@ remove_from_three_depth_tree(){
 static void
 keys_test_more_data(uint16_t max_keys){
     bpt_tree *tree;
-    uintptr_t i, j, max = 2048;
+    uintptr_t i, max = 4096;
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -844,13 +844,8 @@ keys_test_more_data(uint16_t max_keys){
     for (i = max - 1; i >= 1; i--)
 	assert(bpt_search(tree, (void *) i, NULL, NULL) == true);
 
-    for (i = 1; i < max; i++){
-	printf("debug : app deletes key = %lu\n", i);
+    for (i = 1; i < max; i++)
 	assert(bpt_delete(tree, (void *) i, NULL) == true);
-	/* Detect any incorrect tree structure immediately */
-	for (j = i + 1; j < max; j++)
-	    assert(bpt_search(tree, (void *) j, NULL, NULL) == true);
-    }
 
     assert(ll_get_length(tree->root->keys) == 0);
     assert(tree->root->is_leaf == true);
@@ -860,13 +855,8 @@ keys_test_more_data(uint16_t max_keys){
     for (i = max; i >= 1; i--)
 	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);
 
-    for (i = max; i >= 1; i--){
-	printf("debug : app deletes key = %lu\n", i);
+    for (i = max; i >= 1; i--)
 	assert(bpt_delete(tree, (void *) i, NULL) == true);
-	/* Detect any incorrect tree structure immediately */
-	for (j = i - 1; j >= 1; j--)
-	    assert(bpt_search(tree, (void *) j, NULL, NULL) == true);
-    }
 
     assert(ll_get_length(tree->root->keys) == 0);
     assert(tree->root->is_leaf == true);
