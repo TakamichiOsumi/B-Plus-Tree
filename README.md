@@ -1,8 +1,8 @@
 # B+ Tree (Variant)
 
-Submodule for my other repository to enhance my self-education.
+In-memory B+ Tree submodule for my other repository to enhance my self-education.
 
-The difference from the normal B+ Tree is that nodes at the same depth are connected as doubly linked list and every node has pointer to its parent additionally.
+The difference from the normal B+ Tree is that nodes at the same depth are connected as doubly linked list and every node has pointer to its parent.
 
 ## `libbplustree` library functions
 
