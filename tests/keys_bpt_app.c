@@ -42,7 +42,7 @@ employee_free(void *data){}
  * search should succeed.
  */
 static void
-loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
+app_loop_bpt_search(bpt_tree *bpt, int count, uintptr_t answers[]){
     int i;
     bpt_node *node;
 
@@ -136,13 +136,15 @@ reverse_full_keys_comparison_test(bpt_node *node, uintptr_t answers[]){
  * and doesn't take care of record management. Therefore, just have
  * one data for the whole tests and let other tests handle the record
  * management.
+ *
+ * See other sets of tests in records_bpt_app.c.
  */
 static employee emp = { 1, "dummy" };
 
 static void
 search_single_node_test(void){
     bpt_tree *tree;
-    bpt_node *node = NULL;
+    bpt_node *node;
 
     tree = bpt_init(employee_key_access,
 		    employee_key_compare,
@@ -157,17 +159,9 @@ search_single_node_test(void){
     ll_tail_insert(tree->root->children, (void *) &emp);
 
     /* Exact key match */
-    node = NULL;
-    assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
-    assert(node == tree->root);
-
-    node = NULL;
-    assert(bpt_search(tree, (void *) 2, &node, NULL) == true);
-    assert(node == tree->root);
-
-    node = NULL;
-    assert(bpt_search(tree, (void *) 4, &node, NULL) == true);
-    assert(node == tree->root);
+    assert(bpt_search(tree, (void *) 1, NULL, NULL) == true);
+    assert(bpt_search(tree, (void *) 2, NULL, NULL) == true);
+    assert(bpt_search(tree, (void *) 4, NULL, NULL) == true);
 
     /* Non-existing keys */
     node = NULL;
@@ -500,7 +494,7 @@ test_even_number_max_keys(void){
     full_keys_comparison_test(node, answers);
 
     /* All search should be successful */
-    loop_bpt_search(tree, 20, answers);
+    app_loop_bpt_search(tree, 20, answers);
 
     /* Iterate in reverse order */
     node = NULL;
@@ -699,7 +693,7 @@ remove_from_three_depth_tree(){
     for (i = 0; i < 12; i++)
 	bpt_insert(tree, (void *) insertion[i], &emp);
 
-    loop_bpt_search(tree, 12, insertion);
+    app_loop_bpt_search(tree, 12, insertion);
 
     /* Does the whole tree match the expected structure ? */
     node = NULL;
@@ -748,13 +742,13 @@ remove_from_three_depth_tree(){
     /* The leaf nodes */
     assert(bpt_search(tree, (void *) 1, &node, NULL) == true);
     full_keys_comparison_test(node, leaves0);
-    loop_bpt_search(tree, 8, leaves0);
+    app_loop_bpt_search(tree, 8, leaves0);
 
     /* Tiggers a new internal node borrowing */
     assert(bpt_delete(tree, (void *) 10, NULL) == true);
 
     /* Test key search */
-    loop_bpt_search(tree, 7, leaves1);
+    app_loop_bpt_search(tree, 7, leaves1);
 
     node = NULL;
     bpt_search(tree, (void *) 1, &node, NULL);
@@ -777,7 +771,7 @@ remove_from_three_depth_tree(){
     one_node_keys_comparison_test(tree->root, indexes5);
 
     /* Test key search */
-    loop_bpt_search(tree, 6, leaves2);
+    app_loop_bpt_search(tree, 6, leaves2);
 
     /*
      * Insert some new data so as to test another scenario
@@ -800,7 +794,7 @@ remove_from_three_depth_tree(){
     assert(bpt_delete(tree, (void *) 7, NULL) == true);
     assert(bpt_delete(tree, (void *) 4, NULL) == true);
 
-    loop_bpt_search(tree, 5, leaves4);
+    app_loop_bpt_search(tree, 5, leaves4);
 
     bpt_search(tree, (void *) 17, &node, NULL);
     assert(ll_get_length(node->keys) == 2);
