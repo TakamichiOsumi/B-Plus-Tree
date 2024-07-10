@@ -5,7 +5,7 @@
 #include "Linked-List/linked_list.h"
 #include "b_plus_tree.h"
 
-/* Macros for b+ tree node */
+/* Macros for B+ tree node */
 #define HAVE_SAME_PARENT(n1, n2) \
     (n1 && n2 && n1->parent == n2->parent)
 
@@ -200,8 +200,7 @@ bpt_gen_root_callbacks_node(bpt_tree *bpt){
 bpt_tree *
 bpt_init(bpt_key_access_cb keys_key_access,
 	 bpt_key_compare_cb keys_key_compare,
-	 bpt_free_cb keys_key_free,
-	 uint16_t max_keys){
+	 bpt_free_cb keys_key_free, uint16_t max_keys){
     bpt_tree *tree;
 
     if(max_keys < 2){
