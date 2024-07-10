@@ -6,22 +6,24 @@
 #include "b_plus_tree.h"
 
 /* Macros for b+ tree node */
-#define HAVE_SAME_PARENT(n1, n2)				\
-    (n1 != NULL && n2 != NULL && n1->parent == n2->parent)
+#define HAVE_SAME_PARENT(n1, n2) \
+    (n1 && n2 && n1->parent == n2->parent)
 
-/* Macros for key */
+/* Macros for key numbers */
 #define KEY_LEN(n) (ll_get_length(n->keys))
 #define GET_MIN_KEY_NUM(max_keys)				\
     ((max_keys % 2 == 0) ? (max_keys / 2 - 1) : (max_keys / 2))
-#define ITER_BPT_KEY(node) \
-    ll_get_iter_data(node->keys)
 
-/* Macros for children */
+/* Macros for children numbers */
 #define CHILDREN_LEN(n) (ll_get_length(n->children))
 #define GET_MAX_CHILDREN_NUM(max_keys) (max_keys + 1)
 #define GET_MIN_CHILDREN_NUM(max_keys)				\
     ((max_keys % 2 == 0) ? (max_keys / 2) : (max_keys / 2 + 1))
-#define ITER_BPT_CHILD(node) \
+
+/* Macros for iteration */
+#define ITER_BPT_KEY(node)			\
+    ll_get_iter_data(node->keys)
+#define ITER_BPT_CHILD(node)				\
     ((bpt_node *) ll_get_iter_data(node->children))
 
 /*
@@ -192,6 +194,9 @@ bpt_gen_root_callbacks_node(bpt_tree *bpt){
     return n;
 }
 
+/*
+ * Create a new bpt_tree * object.
+ */
 bpt_tree *
 bpt_init(bpt_key_access_cb keys_key_access,
 	 bpt_key_compare_cb keys_key_compare,
@@ -499,7 +504,7 @@ bpt_insert(bpt_tree *bpt, void *new_key, void *new_data){
 /*
  * Refer to or delete the pair of key and record on the leaf node.
  *
- * The exec_delete flag decides whether the pair is deleted or not.
+ * The 'exec_delete' flag decides whether the pair is deleted or not.
  */
 static void *
 bpt_get_key_value_from_leaf(bpt_node *leaf, bool exec_delete, void *search_key){
@@ -873,24 +878,17 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
     return key;
 }
 
-static void
-bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
-		    void **record){
-    int min_key_num = GET_MIN_KEY_NUM(bpt->max_keys);
 
-    assert(bpt != NULL);
-    assert(curr != NULL);
-    assert(removed_key != NULL);
-
-    printf("debug : bpt_delete_internal() for %p\n"
-           "debug : current node = %s and %s, the number of keys = %d, the number of children = %d\n",
-	   curr,
-	   curr->is_root ? "root" : "non-root",
-	   curr->is_leaf ? "leaf" : "non-leaf",
-	   KEY_LEN(curr), CHILDREN_LEN(curr));
+/*
+ * Return true if either type of root promotion occurred.
+ *
+ * Otherwise, return false.
+ */
+static bool
+bpt_root_promoted(bpt_tree *bpt, bpt_node *curr){
 
     /*
-     * Need a root promotion ?
+     * First condition for root promotion.
      *
      * If this is a leaf node, skip this condition block. Otherwise,
      * deleting one key (and its record) from one root node without
@@ -914,11 +912,11 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 
 	printf("debug : completed root promotion\n");
 
-	return;
+	return true;
     }
 
     /*
-     * Another form of root promotion.
+     * The second condition.
      *
      * This shrinks tree's height by merge. The current node has no key and
      * it is the last child for the parent.
@@ -986,7 +984,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	    bpt_free_node(curr);
 
 	    /* Done with the key deletion */
-	    return;
+	    return true;
 	}
 
 	if (HAVE_SAME_PARENT(curr, curr->next)){
@@ -1033,9 +1031,41 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	    bpt_free_node(curr);
 
 	    /* Done with the key deletion */
-	    return;
+	    return true;
 	}
     }
+
+    return false;
+}
+
+/*
+ * The main internal processing of B+ tree deletion.
+ */
+static void
+bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
+		    void **record){
+    int min_key_num = GET_MIN_KEY_NUM(bpt->max_keys);
+
+    assert(bpt != NULL);
+    assert(curr != NULL);
+    assert(removed_key != NULL);
+
+    printf("debug : bpt_delete_internal() for %p\n"
+           "debug : current node = %s and %s, the number of keys = %d, the number of children = %d\n",
+	   curr,
+	   curr->is_root ? "root" : "non-root",
+	   curr->is_leaf ? "leaf" : "non-leaf",
+	   KEY_LEN(curr), CHILDREN_LEN(curr));
+
+    /*
+     * If the root promotion happens, then we have reached to
+     * the top of the tree and done with all the necessary
+     * steps to keep the B+ tree properties.
+     *
+     * Return and close this key deletion process.
+     */
+    if (bpt_root_promoted(bpt, curr))
+	return;
 
     /*
      * --------------------------------------
