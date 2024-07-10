@@ -786,22 +786,7 @@ bpt_merge_nodes(bpt_node *curr, bool with_right){
 	curr->prev->children = merged_children;
     }
 
-    /*
-     * Debug.
-     *
-     * (1) The removed child must have no left keys and children.
-     * (2) The parent must delete the pointer to this removed child.
-     */
-    assert(KEY_LEN(removed_child) == 0);
-    assert(CHILDREN_LEN(removed_child) == 0);
-    ll_begin_iter(curr->parent->children);
-    while((curr_child = ITER_BPT_CHILD(curr->parent)) != NULL){
-	if (curr_child == removed_child)
-	    assert(0);
-    }
-    ll_end_iter(curr->parent->children);
-
-    /* Debugging on the removed child is done. Free the child */
+    /* Free the child */
     bpt_free_node(removed_child);
 
     return deleted_key;
@@ -855,7 +840,7 @@ bpt_replace_index(bpt_node *curr, bool from_right){
 	   (uintptr_t) replaced_index, (uintptr_t) key);
 }
 
-static bpt_node*
+static bpt_node *
 bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
     void *key, *child;
 
@@ -881,7 +866,6 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
     return key;
 }
 
-
 /*
  * Return true if either type of root promotion occurred.
  *
@@ -889,9 +873,8 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
  */
 static bool
 bpt_root_promoted(bpt_tree *bpt, bpt_node *curr){
-
     /*
-     * First condition for root promotion.
+     * The 1st condition.
      *
      * If this is a leaf node, skip this condition block. Otherwise,
      * deleting one key (and its record) from one root node without
@@ -919,7 +902,7 @@ bpt_root_promoted(bpt_tree *bpt, bpt_node *curr){
     }
 
     /*
-     * The second condition.
+     * The 2nd condition.
      *
      * This shrinks tree's height by merge. The current node has no key and
      * it is the last child for the parent.
@@ -1112,9 +1095,10 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	    right_child = bpt_ref_right_child_by_key(curr, removed_key);
 	    ll_remove_by_key(curr->keys, removed_key);
 	    assert((key = bpt_ref_subtree_minimum_key(right_child)) != NULL);
+	    ll_asc_insert(curr->keys, key);
+
 	    printf("debug : removed %lu and inserted %lu as the min key\n",
 		   (uintptr_t) removed_key, (uintptr_t) key);
-	    ll_asc_insert(curr->keys, key);
 
 	    /* Verify the node property */
 	    bpt_node_validity(curr);
