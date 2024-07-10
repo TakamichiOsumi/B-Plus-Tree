@@ -144,10 +144,10 @@ bpt_dump_children_keys(char *prefix, bpt_node *curr){
     printf("debug : %s", prefix);
 
     ll_begin_iter(curr->children);
-    while((child = (bpt_node *) ll_get_iter_data(curr->children)) != NULL){
+    while((child = ITER_BPT_CHILD(curr)) != NULL){
 	printf("debug : \t\t [ ");
 	ll_begin_iter(child->keys);
-	while((key = ll_get_iter_data(child->keys)) != NULL){
+	while((key = ITER_BPT_KEY(child)) != NULL){
 	    printf("%lu, ", (uintptr_t) key);
 	}
 	ll_end_iter(child->keys);
@@ -538,6 +538,9 @@ bpt_get_key_value_from_leaf(bpt_node *leaf, bool exec_delete, void *search_key){
     return record;
 }
 
+/*
+ * The main internal processing of B+ tree search.
+ */
 static bool
 bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node,
 		    void **record){
