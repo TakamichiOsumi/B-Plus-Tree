@@ -43,7 +43,7 @@ $(LIB): $(OBJ_COMPONENTS)
 
 clean:
 	@rm -rf *.o tests/$(KEYS_APP)* tests/$(RECORDS_APP)* \
-		tests/$(COMPOSITE_KEYS_APP)* $(KEY_HANDLER_APP) $(LIB)
+		tests/$(COMPOSITE_KEYS_APP)* tests/$(KEY_HANDLER_APP)* $(LIB)
 	@for dir in $(DEPENDENCY_LIB); do cd $$dir; make clean; cd ..; done
 
 test: $(OBJ_COMPONENTS) $(FULL_TESTS)
