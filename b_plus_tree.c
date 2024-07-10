@@ -1044,8 +1044,8 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	   KEY_LEN(curr), CHILDREN_LEN(curr));
 
     /*
-     * If the root promotion happens, then we have reached to
-     * the top of the tree and done with all the necessary
+     * If the root promotion happens, then we have reached
+     * to the top of the tree and done with all the necessary
      * steps to keep the B+ tree properties.
      *
      * Return and close this key deletion process.
@@ -1153,6 +1153,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 		    /* Continue to update the indexes. Go up by recursive call */
 		    if (!curr->is_root)
 			bpt_delete_internal(bpt, curr->parent, removed_key, record);
+
 		    return;
 		}else{
 		    /* Borrowing between the internal nodes */
@@ -1342,6 +1343,9 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
     }
 }
 
+/*
+ * Wrapper function of bpt_delete_internal().
+ */
 bool
 bpt_delete(bpt_tree *bpt, void *key, void **record){
     bpt_node *leaf_node;
