@@ -4,6 +4,7 @@ G*
 
 # Executables
 run_*
+tests/*_bptree
 
 # Prerequisites
 *.d
