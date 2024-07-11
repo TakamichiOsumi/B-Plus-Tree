@@ -6,23 +6,23 @@
 #include "Linked-List/linked_list.h"
 
 /*
+ * Define all key types to support.
+ */
+typedef enum key_type {
+    BPT_INT,
+    BPT_DOUBLE,
+    BPT_STRING,
+    BPT_BOOLEAN,
+} key_type;
+
+/*
  * Define key sizes of fixed-size variables.
  *
  * String type is calculated by user input.
  */
-#define INT_SIZE (sizeof(INT))
-#define DOUBLE_SIZE (sizeof(DOUBLE))
-#define BOOLEAN_SIZE (sizeof(bool))
-
-/*
- * Define all key types to support
- */
-typedef enum key_type {
-    INT,
-    DOUBLE,
-    STRING,
-    BOOLEAN,
-} key_type;
+#define INT_SIZE (sizeof(BPT_INT))
+#define DOUBLE_SIZE (sizeof(BPT_DOUBLE))
+#define BOOLEAN_SIZE (sizeof(BPT_BOOLEAN))
 
 /*
  * Define one key for each key type.
