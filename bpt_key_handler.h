@@ -49,7 +49,6 @@ typedef struct bpt_key {
  * Assign one composite_key_store to one b+ tree.
  */
 typedef struct composite_key_store {
-
     /*
      * Length of one sequence of unique key
      */
@@ -73,6 +72,5 @@ void *bkh_bool_write(void *key_sequence, void *bool_ptr);
 void *bkh_bool_read(void *key_sequence, void *bool_ptr);
 void *bkh_str_write(void *key_sequence, void *str_ptr);
 void *bkh_str_read(void *key_sequence, void *str_ptr);
-
 
 #endif

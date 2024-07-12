@@ -15,7 +15,7 @@ FULL_TESTS	= $(KEY_HANDLER_APP) $(KEYS_APP) $(RECORDS_APP) $(COMPOSITE_KEYS_APP)
 
 LIB	= libbplustree.a
 
-all: $(LIB) $(KEYS_APP) $(RECORDS_APP) $(COMPOSITE_KEYS_APP) $(KEY_HANDLER_APP)
+all: $(LIB)
 
 library:
 	for dir in $(DEPENDENCY_LIB); do make -C $$dir; done
@@ -47,5 +47,5 @@ clean:
 	@for dir in $(DEPENDENCY_LIB); do cd $$dir; make clean; cd ..; done
 
 test: $(OBJ_COMPONENTS) $(FULL_TESTS)
-	@echo "Run several tests. This will take some time..."
+	@echo "Run several tests..."
 	@for exec in $(FULL_TESTS); do ./tests/$$exec &> /dev/null && echo "Success when the value is zero >>> $$?"; done

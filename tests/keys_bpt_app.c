@@ -5,23 +5,20 @@
 
 #include "../b_plus_tree.h"
 
+/*
+ * This file tests combination of integer keys casted to uintptr_t
+ * and values which points to employee object.
+ */
 typedef struct employee {
     uintptr_t id;
     char *name;
 } employee;
 
 /*
- * linked_list *keys
- *
- * Will store uintptr_t *. Return one id.
+ * Compare two (originally) integer values. Ignore metadata.
  */
-static void *
-employee_key_access(void *data){
-    return data;
-}
-
 static int
-employee_key_compare(void *key1, void *key2){
+employee_key_compare(void *key1, void *key2, void *metadata){
     uintptr_t k1 = (uintptr_t) key1,
         k2 = (uintptr_t) key2;
 
@@ -34,8 +31,13 @@ employee_key_compare(void *key1, void *key2){
     }
 }
 
-static void
-employee_free(void *data){}
+/*
+ * Don't free keys and children. The object is not allocated
+ * in the tests.
+ */
+static void employee_key_free(void *data){}
+
+static void employee_record_free(void *data){}
 
 /*
  * Execute bpt_search based on uintptr_t arrays, expecting all
@@ -146,9 +148,10 @@ search_single_node_test(void){
     bpt_tree *tree;
     bpt_node *node;
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free, 4);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    4, NULL);
 
     /* Construct one root without any leaf nodes */
     ll_asc_insert(tree->root->keys, (void *) 4);
@@ -180,10 +183,10 @@ search_two_depth_nodes_test(void){
     bpt_tree *tree;
     bpt_node *left, *right, *node;
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    3);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    3, NULL);
 
     /* Root node */
     ll_asc_insert(tree->root->keys, (void *) 5);
@@ -249,10 +252,10 @@ search_three_depth_nodes_test(void){
     /* For test */
     bpt_node *node;
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    5);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    5, NULL);
 
     /* Root node */
     ll_asc_insert(tree->root->keys, (void *) 13);
@@ -380,10 +383,10 @@ insert_and_create_two_depth_tree(void){
     bpt_tree *tree;
     bpt_node *left, *right;
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    5);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    5, NULL);
 
     assert(bpt_insert(tree, (void *) 1, &emp) == true);
     assert(bpt_insert(tree, (void *) 2, &emp) == true);
@@ -418,10 +421,10 @@ insert_and_create_three_depth_tree(void){
     uintptr_t sorted_output[] =
 	{ 2, 4, 9, 10, 11, 12, 14, 15, 18, 20, 30 };
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    3);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    3, NULL);
 
     assert(bpt_insert(tree, (void *) 18, &emp) == true);
     assert(bpt_insert(tree, (void *) 15, &emp) == true);
@@ -478,10 +481,10 @@ test_even_number_max_keys(void){
 			10, 9, 8, 7, 6, 5,
 			4, 3, 2, 1 };
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    4);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    4, NULL);
 
     /* Insert 20 keys */
     for (answer = 20; answer >= 1; answer--)
@@ -514,10 +517,10 @@ remove_from_one_root(void){
     uintptr_t answers1[] = { 1, 2, 3 },
 	answers2[] = { 1, 3 };
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    5);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    5, NULL);
 
     assert(bpt_insert(tree, (void *) 1, (void *) &emp) == true);
     assert(bpt_insert(tree, (void *) 2, (void *) &emp) == true);
@@ -559,10 +562,10 @@ remove_from_two_depth_tree(void){
 	indexes1[] = { 2, 5 },
 	indexes2[] = { 5, 6 };
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    3);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    3, NULL);
 
     /* Create the two depth tree */
     for (i = 1; i <= 6; i++)
@@ -685,10 +688,10 @@ remove_from_three_depth_tree(){
 	leaves3[] = { 1, 4, 7, 9, 17, 19, 20 },
 	leaves4[] = { 1, 9, 17, 19, 20 };
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    3);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    3, NULL);
 
     for (i = 0; i < 12; i++)
 	bpt_insert(tree, (void *) insertion[i], &emp);
@@ -827,10 +830,10 @@ keys_test_more_data(uint16_t max_keys){
     bpt_tree *tree;
     uintptr_t i, max = 4096;
 
-    tree = bpt_init(employee_key_access,
-		    employee_key_compare,
-		    employee_free,
-		    max_keys);
+    tree = bpt_init(employee_key_compare,
+		    employee_key_free,
+		    employee_record_free,
+		    max_keys, NULL);
 
     for (i = 1; i < max; i++)
 	assert(bpt_insert(tree, (void *) i, (void *) &emp) == true);

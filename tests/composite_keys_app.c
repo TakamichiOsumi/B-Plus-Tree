@@ -14,13 +14,8 @@ typedef struct student {
     char name[NAME_LEN];
 } student;
 
-static void *
-student_key_access(void *data){
-    return data;
-}
-
 static int
-student_key_compare(void *key1, void *key2){
+student_key_compare(void *key1, void *key2, void *metadata){
     uintptr_t k1 = (uintptr_t) key1,
         k2 = (uintptr_t) key2;
 
@@ -34,7 +29,10 @@ student_key_compare(void *key1, void *key2){
 }
 
 static void
-student_free(void *data){}
+student_key_free(void *data){}
+
+static void
+student_record_free(void *data){}
 
 static void
 records_bpt_test(){
@@ -42,10 +40,10 @@ records_bpt_test(){
     uintptr_t i, records_num = 1024;
     student *std, *std_ary;
 
-    tree = bpt_init(student_key_access,
-		    student_key_compare,
-		    student_free,
-		    3);
+    tree = bpt_init(student_key_compare,
+		    student_key_free,
+		    student_record_free,
+		    3, NULL);
 
     std_ary = (student *) malloc(sizeof(student) * records_num);
 

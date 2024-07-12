@@ -75,10 +75,8 @@ bpt_dump_whole_tree(bpt_tree *bpt){
 	while(true){
 	    printf("[");
 	    ll_begin_iter(curr->keys);
-	    for (i = 0; i < KEY_LEN(curr); i++){
-		printf("%lu, ",
-		       (uintptr_t) ll_get_iter_data(curr->keys));
-	    }
+	    for (i = 0; i < KEY_LEN(curr); i++)
+		printf("%lu, ", (uintptr_t) ITER_BPT_KEY(curr));
 	    ll_end_iter(curr->keys);
 	    printf("] ");
 
@@ -184,12 +182,16 @@ bpt_gen_root_callbacks_node(bpt_tree *bpt){
     bpt_node *n;
 
     n = bpt_gen_node();
+
     n->keys = ll_init(bpt->root->keys->key_access_cb,
 		      bpt->root->keys->key_compare_cb,
-		      bpt->root->keys->free_cb);
+		      bpt->root->keys->free_cb,
+		      bpt->root->keys->keys_compare_metadata);
+
     n->children = ll_init(bpt->root->children->key_access_cb,
 			  bpt->root->children->key_compare_cb,
-			  bpt->root->children->free_cb);
+			  bpt->root->children->free_cb,
+			  bpt->root->keys->keys_compare_metadata);
 
     return n;
 }
@@ -198,9 +200,11 @@ bpt_gen_root_callbacks_node(bpt_tree *bpt){
  * Create a new bpt_tree * object.
  */
 bpt_tree *
-bpt_init(bpt_key_access_cb keys_key_access,
-	 bpt_key_compare_cb keys_key_compare,
-	 bpt_free_cb keys_key_free, uint16_t max_keys){
+bpt_init(bpt_key_compare_cb keys_key_compare,
+	 bpt_free_cb keys_key_free,
+	 bpt_free_cb records_record_free,
+	 uint16_t max_keys,
+	 composite_key_store *keys_compare_metadata){
     bpt_tree *tree;
 
     if(max_keys < 2){
@@ -209,21 +213,27 @@ bpt_init(bpt_key_access_cb keys_key_access,
 	return NULL;
     }
 
-    if (keys_key_access == NULL || keys_key_compare == NULL){
+    if (keys_key_compare == NULL){
 	fprintf(stderr,
-		"NULL 'keys_key_access' or 'keys_key_compare' callback is invalid\n");
+		"NULL 'keys_key_compare' callback is invalid\n");
 	return NULL;
     }
 
     tree = (bpt_tree *) bpt_malloc(sizeof(bpt_tree));
     tree->max_keys = max_keys;
 
-    /* Set up the initial empty node with empty lists */
+    /*
+     * Set up the initial empty node with empty lists.
+     *
+     * Application must define 'keys_key_compare' and
+     * 'records_record_free'
+     */
     tree->root = bpt_gen_node();
     tree->root->is_root = tree->root->is_leaf = true;
-    tree->root->keys = ll_init(keys_key_access,
+    tree->root->keys = ll_init(NULL,
 			       keys_key_compare,
-			       keys_key_free);
+			       keys_key_free,
+			       (void *) keys_compare_metadata);
 
     /*
      * Manipulation of children like insert should be
@@ -245,7 +255,8 @@ bpt_init(bpt_key_access_cb keys_key_access,
      * on some basic APIs without key access and compare
      * callbacks.
      */
-    tree->root->children = ll_init(NULL, NULL, NULL);
+    tree->root->children = ll_init(NULL, NULL,
+				   records_record_free, NULL);
 
     return tree;
 }
@@ -576,8 +587,9 @@ bpt_search_internal(bpt_node *curr, void *new_key, bpt_node **leaf_node,
 
     ll_begin_iter(keys);
     for (children_index = 0; children_index < KEY_LEN(curr); children_index++){
-	diff = keys->key_compare_cb(keys->key_access_cb(ll_get_iter_data(keys)),
-				    keys->key_access_cb(new_key));
+	diff = keys->key_compare_cb(ll_get_iter_data(keys),
+				    new_key,
+				    keys->keys_compare_metadata);
 	if (diff == 0 || diff == 1)
 	    break;
     }
@@ -682,7 +694,8 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
 	key_iter = ITER_BPT_KEY(node);
 	child_iter = ITER_BPT_CHILD(node);
 
-	if (node->keys->key_compare_cb(key_iter, key) == 0)
+	if (node->keys->key_compare_cb(key_iter, key,
+				       node->keys->keys_compare_metadata) == 0)
 	    break;
     }
     /* The right child for the key is the next pointer */
@@ -695,8 +708,10 @@ bpt_ref_right_child_by_key(bpt_node *node, void *key){
 }
 
 /*
- * Don't expect children can perform key_access_cb and key_compare_cb.
- * So, merging children uses some basic APIs for linked list such as
+ * Don't expect children can perform key_compare_cb as described
+ * in bpt_init().
+ *
+ * Merging children uses some basic APIs for linked list such as
  * ll_tail_insert() or ll_remove_first_data().
  *
  * Update the parent's keys and children according to the merge.

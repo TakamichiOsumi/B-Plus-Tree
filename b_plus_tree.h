@@ -53,7 +53,8 @@ typedef void *(*bpt_key_access_cb)(void *p);
 /*
  * Return -1 when k1 < k2, 0 when k1 == k2 and 1 when k1 > k2.
  */
-typedef int (*bpt_key_compare_cb)(void *k1, void *k2);
+typedef int (*bpt_key_compare_cb)(void *k1, void *k2,
+				  void *key_metadata);
 
 /*
  * Free dynamic memory inside of the application data.
@@ -73,9 +74,11 @@ typedef struct bpt_tree {
     uint16_t max_keys;
 
     /*
-     * Manage the metadata of composite key
+     * Manage the metadata of composite key.
+     *
+     * Copied to the linked list's keys_compare_metadata.
      */
-    composite_key_store key_metadata;
+    composite_key_store keys_compare_metadata;
 
 } bpt_tree;
 
@@ -83,10 +86,9 @@ void bpt_dump_whole_tree(bpt_tree *bpt);
 void bpt_node_validity(bpt_node *node);
 bpt_node *bpt_gen_node(void);
 bpt_node *bpt_gen_root_callbacks_node(bpt_tree *bpt);
-bpt_tree *bpt_init(bpt_key_access_cb keys_key_access,
-		   bpt_key_compare_cb keys_key_compare,
-		   bpt_free_cb keys_key_free,
-		   uint16_t max_keys);
+bpt_tree *bpt_init(bpt_key_compare_cb keys_key_compare, bpt_free_cb keys_key_free,
+		   bpt_free_cb records_record_free, uint16_t max_keys,
+		   composite_key_store *keys_compare_metadata);
 bool bpt_insert(bpt_tree *bpt, void *key, void *data);
 bool bpt_search(bpt_tree *bpt, void *key, bpt_node **node,
 		void **record);
