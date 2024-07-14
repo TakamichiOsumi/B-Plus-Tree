@@ -49,13 +49,14 @@ typedef struct bpt_key {
  * Assign one composite_key_store to one b+ tree.
  */
 typedef struct composite_key_store {
+
     /*
      * Length of one sequence of unique key
      */
     int full_key_size;
 
     /*
-     * Lists of bpt_key defined above
+     * Lists of 'bpt_key'
      */
     linked_list *key_attributes;
 

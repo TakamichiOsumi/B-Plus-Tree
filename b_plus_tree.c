@@ -27,6 +27,14 @@
     ((bpt_node *) ll_get_iter_data(node->children))
 
 /*
+ * Necessary function prototype for the cross reference
+ * bpt_delete_internal() and bpt_borrowed_key_from_sibling().
+ */
+static void
+bpt_delete_internal(bpt_tree *bpt, bpt_node *curr,
+		    void *removed_key, void **record);
+
+/*
  * Return the bpt_node * child from the node by specified index
  * value.
  */
@@ -1038,14 +1046,158 @@ bpt_root_promoted(bpt_tree *bpt, bpt_node *curr){
     return false;
 }
 
+
+/*
+ * Return true if the current node could borrowed a key from
+ * either left or right sibling.
+ *
+ * Otherwise, return false.
+ */
+static bool
+bpt_borrowed_key_from_sibling(bpt_tree *bpt, bpt_node *curr,
+			      void *removed_key, void **record){
+    void *borrowed_key;
+
+    /* Is the left node an available sibling to borrow a key ? */
+    if (HAVE_SAME_PARENT(curr, curr->prev)){
+
+	if (KEY_LEN(curr->prev) > GET_MIN_KEY_NUM(bpt->max_keys)){
+	    printf("debub : borrowing from the left node\n"
+		   "debug : the number of current node's keys = %d\n",
+		   KEY_LEN(curr));
+
+	    if (curr->is_leaf){
+		/* Borrowing between the leaf nodes */
+		borrowed_key = ll_tail_remove(curr->prev->keys);
+		ll_insert(curr->keys, borrowed_key);
+		ll_insert(curr->children, ll_tail_remove(curr->prev->children));
+
+		printf("debug : borrowed the max key = %lu from the left sibling\n",
+		       (uintptr_t) borrowed_key);
+
+		/* Update the parent's index */
+		bpt_replace_index(curr, false);
+
+		/* Verify the node property */
+		bpt_node_validity(curr);
+
+		/* Continue to update the indexes. Go up by recursive call */
+		if (!curr->is_root)
+		    bpt_delete_internal(bpt, curr->parent, removed_key, record);
+
+		return true;
+	    }else{
+		/* Borrowing between the internal nodes */
+		void *middle_key, *largest_key;
+		bpt_node *borrowed_child;
+
+		/*
+		 * If this internal node borrows a key from other node, then get
+		 * the intermediate parent's key as the new key value for this node,
+		 * and remove it from the parent and write the largest key as the
+		 * new parent's key.
+		 */
+		assert((largest_key = ll_tail_remove(curr->prev->keys)) != NULL);
+		middle_key = bpt_ref_key_between_children(curr->prev, curr);
+
+		ll_asc_insert(curr->keys, middle_key);
+		assert(ll_remove_by_key(curr->parent->keys, middle_key) != NULL);
+		ll_asc_insert(curr->parent->keys, largest_key);
+
+		bpt_dump_list("from left internal node's children",
+			      curr->prev->keys);
+		bpt_dump_list("to right internal node's children",
+			      curr->keys);
+
+		/* Whenever we borrow an internal node's child, update its attributes */
+		assert((borrowed_child = (bpt_node *) ll_tail_remove(curr->prev->children)) != NULL);
+		borrowed_child->parent = curr;
+		ll_insert(curr->children, (void *) borrowed_child);
+
+		printf("debug : the new current node's key = %lu, new parent's index key = %lu\n",
+		       (uintptr_t) middle_key, (uintptr_t) largest_key);
+
+		/* Verify the node property */
+		bpt_node_validity(curr);
+
+		return true;
+	    }
+	}
+    }
+
+    /* The left node wasn't available. How about the right sibling ? */
+    if (HAVE_SAME_PARENT(curr, curr->next)){
+
+	if (KEY_LEN(curr->next) > GET_MIN_KEY_NUM(bpt->max_keys)){
+	    printf("debug : borrowing from the right node\n"
+		   "debug : the number of current node's keys = %d\n",
+		   KEY_LEN(curr));
+
+	    if (curr->is_leaf){
+		/* Borrowing between the leaf nodes */
+		borrowed_key = ll_remove_first_data(curr->next->keys);
+		ll_tail_insert(curr->keys, borrowed_key);
+		ll_tail_insert(curr->children,
+			       ll_remove_first_data(curr->next->children));
+
+		printf("debug : borrowed the min key = %lu from the right sibling\n",
+		       (uintptr_t) borrowed_key);
+
+		/* Update the parent's index */
+		bpt_replace_index(curr, true);
+
+		/* Verify the node property */
+		bpt_node_validity(curr);
+
+		/* Continue to update the indexes. Go up by recursive call */
+		if (!curr->is_root)
+		    bpt_delete_internal(bpt, curr->parent, removed_key, record);
+
+		return true;
+	    }else{
+		/* Borrowing between the internal nodes */
+		void *middle_key, *smallest_key;
+		bpt_node *borrowed_child;
+
+		/* Remove the smallest key from the right node by borrowing */
+		assert((smallest_key = ll_remove_first_data(curr->next->keys)) != NULL);
+		middle_key = bpt_ref_key_between_children(curr, curr->next);
+
+		ll_asc_insert(curr->keys, middle_key);
+		assert(ll_remove_by_key(curr->parent->keys, middle_key) != NULL);
+		ll_asc_insert(curr->parent->keys, smallest_key);
+
+		bpt_dump_list("from right internal node's children",
+			      curr->next->keys);
+		bpt_dump_list("to left internal node's children",
+			      curr->keys);
+
+		/* Whenever we borrow an internal node's child, update its attributes */
+		borrowed_child = (bpt_node *) ll_remove_first_data(curr->next->children);
+		assert(borrowed_child != NULL);
+		borrowed_child->parent = curr;
+		ll_tail_insert(curr->children, borrowed_child);
+
+		printf("debug : the new current node's key = %lu, the new parent's index key = %lu\n",
+		       (uintptr_t) middle_key, (uintptr_t) smallest_key);
+
+		/* Verify the node property */
+		bpt_node_validity(curr);
+
+		return true;
+	    }
+	}
+    }
+
+    return false;
+}
+
 /*
  * The main internal processing of B+ tree deletion.
  */
 static void
 bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 		    void **record){
-    int min_key_num = GET_MIN_KEY_NUM(bpt->max_keys);
-
     assert(bpt != NULL);
     assert(curr != NULL);
     assert(removed_key != NULL);
@@ -1123,232 +1275,99 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
      * We are done with key deletion of this node. Execute the following codes
      * and keep the b+ tree property.
      */
-
-    if (KEY_LEN(curr) >= min_key_num){
+    if (KEY_LEN(curr) >= GET_MIN_KEY_NUM(bpt->max_keys)){
 	/* The current node has sufficient keys. Go up if possible */
 	if (!curr->is_root)
 	    bpt_delete_internal(bpt, curr->parent, removed_key, record);
 
 	return;
+
     }else{
-	/* The current node doesn't have enough keys. Try borrowing first */
-	bool has_left_sibling = false, borrowed_from_left = false,
-	    has_right_sibling = false, borrowed_from_right = false;
-	void *borrowed_key;
 
-	/* Is the left node an available sibling to borrow a key ? */
-	if (HAVE_SAME_PARENT(curr, curr->prev)){
-	    assert(curr->parent != NULL);
+	/* Could borrow a key from either sibling ? */
+	if (bpt_borrowed_key_from_sibling(bpt, curr, removed_key, record)){
 
-	    has_left_sibling = true;
+	    /* Go up to update index if we have an upper node */
+	    if (!curr->is_root)
+		bpt_delete_internal(bpt, curr->parent, removed_key, record);
 
-	    if (KEY_LEN(curr->prev) > min_key_num){
-		borrowed_from_left = true;
-
-		printf("debub : borrowing from the left node\n"
-		       "debug : the number of current node's keys = %d\n",
-		       KEY_LEN(curr));
-
-		if (curr->is_leaf){
-		    /* Borrowing between the leaf nodes */
-		    borrowed_key = ll_tail_remove(curr->prev->keys);
-		    ll_insert(curr->keys, borrowed_key);
-		    ll_insert(curr->children, ll_tail_remove(curr->prev->children));
-
-		    printf("debug : borrowed the max key = %lu from the left sibling\n",
-			   (uintptr_t) borrowed_key);
-
-		    /* Update the parent's index */
-		    bpt_replace_index(curr, false);
-
-		    /* Verify the node property */
-		    bpt_node_validity(curr);
-
-		    /* Continue to update the indexes. Go up by recursive call */
-		    if (!curr->is_root)
-			bpt_delete_internal(bpt, curr->parent, removed_key, record);
-
-		    return;
-		}else{
-		    /* Borrowing between the internal nodes */
-		    void *middle_key, *largest_key;
-		    bpt_node *borrowed_child;
-
-		    /*
-		     * If this internal node borrows a key from other node, then get
-		     * the intermediate parent's key as the new key value for this node,
-		     * and remove it from the parent and write the largest key as the
-		     * new parent's key.
-		     */
-		    assert((largest_key = ll_tail_remove(curr->prev->keys)) != NULL);
-		    middle_key = bpt_ref_key_between_children(curr->prev, curr);
-
-		    ll_asc_insert(curr->keys, middle_key);
-		    assert(ll_remove_by_key(curr->parent->keys, middle_key) != NULL);
-		    ll_asc_insert(curr->parent->keys, largest_key);
-
-		    bpt_dump_list("from left internal node's children",
-				  curr->prev->keys);
-		    bpt_dump_list("to right internal node's children",
-				  curr->keys);
-
-		    /* Whenever we borrow an internal node's child, update its attributes */
-		    assert((borrowed_child = (bpt_node *) ll_tail_remove(curr->prev->children)) != NULL);
-		    borrowed_child->parent = curr;
-		    ll_insert(curr->children, (void *) borrowed_child);
-
-		    printf("debug : the new current node's key = %lu, new parent's index key = %lu\n",
-			   (uintptr_t) middle_key, (uintptr_t) largest_key);
-
-		    /* Verify the node property */
-		    bpt_node_validity(curr);
-		}
-	    }
-	}
-
-	/* The left node wasn't available. How about the right sibling ? */
-	if (!borrowed_from_left && HAVE_SAME_PARENT(curr, curr->next)){
-	    assert(curr->parent != NULL);
-	    has_right_sibling = true;
-
-	    if (KEY_LEN(curr->next) > min_key_num){
-		borrowed_from_right = true;
-
-		printf("debug : borrowing from the right node\n"
-		       "debug : the number of current node's keys = %d\n",
-		       KEY_LEN(curr));
-
-		if (curr->is_leaf){
-		    /* Borrowing between the leaf nodes */
-		    borrowed_key = ll_remove_first_data(curr->next->keys);
-		    ll_tail_insert(curr->keys, borrowed_key);
-		    ll_tail_insert(curr->children,
-				   ll_remove_first_data(curr->next->children));
-
-		    printf("debug : borrowed the min key = %lu from the right sibling\n",
-			   (uintptr_t) borrowed_key);
-
-		    /* Update the parent's index */
-		    bpt_replace_index(curr, true);
-
-		    /* Verify the node property */
-		    bpt_node_validity(curr);
-
-		    /* Continue to update the indexes. Go up by recursive call */
-		    if (!curr->is_root)
-			bpt_delete_internal(bpt, curr->parent, removed_key, record);
-
-		    return;
-		}else{
-		    /* Borrowing between the internal nodes */
-		    void *middle_key, *smallest_key;
-		    bpt_node *borrowed_child;
-
-		    /* Remove the smallest key from the right node by borrowing */
-		    assert((smallest_key = ll_remove_first_data(curr->next->keys)) != NULL);
-		    middle_key = bpt_ref_key_between_children(curr, curr->next);
-
-		    ll_asc_insert(curr->keys, middle_key);
-		    assert(ll_remove_by_key(curr->parent->keys, middle_key) != NULL);
-		    ll_asc_insert(curr->parent->keys, smallest_key);
-
-		    bpt_dump_list("from right internal node's children",
-				  curr->next->keys);
-		    bpt_dump_list("to left internal node's children",
-				  curr->keys);
-
-		    /* Whenever we borrow an internal node's child, update its attributes */
-		    borrowed_child = (bpt_node *) ll_remove_first_data(curr->next->children);
-		    assert(borrowed_child != NULL);
-		    borrowed_child->parent = curr;
-		    ll_tail_insert(curr->children, borrowed_child);
-
-		    printf("debug : the new current node's key = %lu, the new parent's index key = %lu\n",
-			   (uintptr_t) middle_key, (uintptr_t) smallest_key);
-
-		    /* Verify the node property */
-		    bpt_node_validity(curr);
-		}
-	    }
+	    return;
 	}
 
 	/* Merge nodes if possible */
-	if (borrowed_from_left == false && borrowed_from_right == false){
+	printf("debug : borrowing a key didn't happen\n");
 
-	    printf("debug : borrowing a key didn't happen\n");
+	if (HAVE_SAME_PARENT(curr, curr->prev)){
+	    /*
+	     * Note that after the merge with the left node,
+	     * the current (right) node will be free-ed. Then,
+	     * refer to any attributes of 'curr' won't be
+	     * allowed after the bpt_merge_nodes(). Save
+	     * the parameter necessary for any subsequent
+	     * processing in advance.
+	     */
+	    void *deleted_key;
+	    bpt_node *prev = curr->prev;
 
-	    if (has_left_sibling){
-		/*
-		 * Note that after the merge with the left node,
-		 * the current (right) node will be free-ed. Then,
-		 * refer to any attributes of 'curr' won't be
-		 * allowed after the bpt_merge_nodes(). Save
-		 * the parameter necessary for any subsequent
-		 * processing in advance.
-		 */
-		void *deleted_key;
-		bpt_node *prev = curr->prev;
+	    printf("debug : bpt_merge_nodes() with left node\n");
 
-		printf("debug : bpt_merge_nodes() with left node\n");
+	    /* The current node gets merged with the previous one */
+	    deleted_key = bpt_merge_nodes(curr, false);
+	    printf("debug : this merge decrements the number of parent's keys to '%d'\n",
+		   KEY_LEN(prev->parent));
 
-		/* The current node gets merged with the previous one */
-		deleted_key = bpt_merge_nodes(curr, false);
-		printf("debug : this merge decrements the number of parent's keys to '%d'\n",
-		       KEY_LEN(prev->parent));
-
-		/*
-		 * Incorporate the split key from parent to the current node,
-		 * if this is an internal node.
-		 */
-		if (prev->is_leaf == false){
-		    ll_asc_insert(prev->keys, deleted_key);
-		    printf("debug : incorporate the split key = %lu from parent to child\n",
-			   (uintptr_t) deleted_key);
-		}
-
-		/* Verify the node property */
-		bpt_node_validity(prev);
-
-		/*
-		 * Go up by using the saved reference of previous sibling.
-		 * Avoid the call of the bpt_delete_internal() that uses
-		 * current node below.
-		 */
-		if (prev->parent)
-		    bpt_delete_internal(bpt, prev->parent, removed_key, record);
-
-		return;
-
-	    }else if (has_right_sibling){
-		/*
-		 * This path merges the current node with the next node.
-		 * Any left data in the next node will be moved to the current
-		 * node. Thus, after the bpt_merge_nodes(), attributes of the
-		 * current node are available.
-		 */
-		void *deleted_key;
-
-		printf("debug : bpt_merge_nodes() with right node\n");
-
-		deleted_key = bpt_merge_nodes(curr, true);
-		printf("debug : this merge decrements the number of parent's keys to '%d'\n",
-		       KEY_LEN(curr->parent));
-
-		/*
-		 * Incorporate the split key from parent to the current node,
-		 * if this is an internal node.
-		 */
-		if (curr->is_leaf == false){
-		    ll_asc_insert(curr->keys, deleted_key);
-		    printf("debug : incorporate the split key = %lu from parent to child\n",
-			   (uintptr_t) deleted_key);
-		}
-
-		/* Verify the node property */
-		bpt_node_validity(curr);
-	    }else{
-		printf("debug : merging nodes didn't happen either\n");
+	    /*
+	     * Incorporate the split key from parent to the current node,
+	     * if this is an internal node.
+	     */
+	    if (prev->is_leaf == false){
+		ll_asc_insert(prev->keys, deleted_key);
+		printf("debug : incorporate the split key = %lu from parent to child\n",
+		       (uintptr_t) deleted_key);
 	    }
+
+	    /* Verify the node property */
+	    bpt_node_validity(prev);
+
+	    /*
+	     * Go up by using the saved reference of previous sibling.
+	     * Avoid the call of the bpt_delete_internal() that uses
+	     * current node below.
+	     */
+	    if (prev->parent)
+		bpt_delete_internal(bpt, prev->parent, removed_key, record);
+
+	    return;
+
+	}else if (HAVE_SAME_PARENT(curr, curr->next)){
+	    /*
+	     * This path merges the current node with the next node.
+	     * Any left data in the next node will be moved to the current
+	     * node. Thus, after the bpt_merge_nodes(), attributes of the
+	     * current node are available.
+	     */
+	    void *deleted_key;
+
+	    printf("debug : bpt_merge_nodes() with right node\n");
+
+	    deleted_key = bpt_merge_nodes(curr, true);
+	    printf("debug : this merge decrements the number of parent's keys to '%d'\n",
+		   KEY_LEN(curr->parent));
+
+	    /*
+	     * Incorporate the split key from parent to the current node,
+	     * if this is an internal node.
+	     */
+	    if (curr->is_leaf == false){
+		ll_asc_insert(curr->keys, deleted_key);
+		printf("debug : incorporate the split key = %lu from parent to child\n",
+		       (uintptr_t) deleted_key);
+	    }
+
+	    /* Verify the node property */
+	    bpt_node_validity(curr);
+	}else{
+	    printf("debug : merging nodes didn't happen either\n");
 	}
 
 	/* Continue to update the indexes. Go up by recursive call */

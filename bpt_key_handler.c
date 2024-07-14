@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include "b_plus_tree.h"
+#include "bpt_key_handler.h"
+
+#include "Linked-List/linked_list.h"
 
 void *
 bkh_malloc(size_t size){
@@ -150,3 +153,44 @@ bkh_str_read(void *key_sequence, void *str_ptr){
 
     return key_sequence;
 }
+
+/*
+ * Genereate composite keys metadata from primary keys
+ * components.
+ */
+composite_key_store *
+bpt_generate_composite_keys(linked_list *primary_keys){
+    composite_key_store *cks;
+    uintptr_t type;
+    int i;
+    /* int i, full_key_length = 0; */
+
+    if (primary_keys == NULL || primary_keys->head == NULL)
+	return NULL;
+
+    cks = bkh_malloc(sizeof(composite_key_store));
+    cks->key_attributes = bkh_malloc(sizeof(bpt_key) * ll_get_length(primary_keys));
+
+    ll_begin_iter(primary_keys);
+    for (i = 0; i < ll_get_length(primary_keys); i++){
+	type = (uintptr_t) ll_get_iter_data(primary_keys);
+	switch(type){
+	    case BPT_INT:
+		break;
+	    case BPT_DOUBLE:
+		break;
+	    case BPT_STRING:
+		break;
+	    case BPT_BOOLEAN:
+		break;
+	    default:
+		break;
+	}
+    }
+    ll_end_iter(primary_keys);
+
+    return cks;
+}
+
+void
+bpt_destroy_composite_keys(composite_key_store *cks){}
