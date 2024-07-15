@@ -122,7 +122,9 @@ bpt_free_node(bpt_node *node){
     }
 }
 
-/* Dump one list with its length */
+/*
+ * Dump one list with its length.
+ */
 static void
 bpt_dump_list(char *prefix, linked_list *list){
     void *p;
@@ -138,7 +140,9 @@ bpt_dump_list(char *prefix, linked_list *list){
     ll_end_iter(list);
 }
 
-/* Dump internal node's children. Don't dump records */
+/*
+ * Dump internal node's children. Don't dump records.
+ */
 static void
 bpt_dump_children_keys(char *prefix, bpt_node *curr){
     bpt_node *child;
@@ -862,6 +866,9 @@ bpt_replace_index(bpt_node *curr, bool from_right){
 	   (uintptr_t) replaced_index, (uintptr_t) key);
 }
 
+/*
+ * Return the middle key value between two childs.
+ */
 static bpt_node *
 bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
     void *key, *child;
@@ -881,7 +888,7 @@ bpt_ref_key_between_children(bpt_node *left, bpt_node *right){
 	key = ITER_BPT_KEY(left->parent);
 	child = ITER_BPT_CHILD(left->parent);
     }
-    assert(right == ll_get_iter_data(left->parent->children));
+    assert(right == ITER_BPT_CHILD(left->parent));
     ll_end_iter(left->parent->keys);
     ll_end_iter(left->parent->children);
 
