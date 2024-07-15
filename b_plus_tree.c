@@ -1400,13 +1400,14 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	 * Merge nodes if possible.
 	 *
 	 * After the bpt_merged_and_rebalanced_nodes(), all of
-	 * the steps to keep this entire B+ Tree property are done,
-	 * including updates of upper nodes.
+	 * the steps to keep this entire B+ Tree property are
+	 * done, including updates of upper nodes.
 	 *
 	 * This is because the function internally calls
 	 * bpt_delete_internal() and updates the upper layers.
 	 *
-	 * Return and close this deletion process.
+	 * Return and close this deletion process if it returns
+	 * true.
 	 */
 	if (bpt_merged_and_rebalanced_nodes(bpt, curr,
 					    removed_key, record))
