@@ -1372,7 +1372,7 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
     bpt_remove_key_from_node(bpt, curr, removed_key, record);
 
     /*
-     * Execute the following codes and keep the b+ tree property.
+     * Execute the following steps to keep the b+ tree property.
      */
     if (KEY_LEN(curr) >= GET_MIN_KEY_NUM(bpt->max_keys)){
 
@@ -1399,8 +1399,12 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	/*
 	 * Merge nodes if possible.
 	 *
-	 * After the bpt_merged_and_rebalanced_nodes(), the
-	 * whole steps to keep the B+ Tree property are done.
+	 * After the bpt_merged_and_rebalanced_nodes(), all of
+	 * the steps to keep this entire B+ Tree property are done,
+	 * including updates of upper nodes.
+	 *
+	 * This is because the function internally calls
+	 * bpt_delete_internal() and updates the upper layers.
 	 *
 	 * Return and close this deletion process.
 	 */
