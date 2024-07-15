@@ -1046,7 +1046,6 @@ bpt_root_promoted(bpt_tree *bpt, bpt_node *curr){
     return false;
 }
 
-
 /*
  * Return true if the current node could borrowed a key from
  * either left or right sibling.
@@ -1193,6 +1192,96 @@ bpt_borrowed_key_from_sibling(bpt_tree *bpt, bpt_node *curr,
 }
 
 /*
+ * Return true if we could perform node merge and complete nodes
+ * rebalance by incorporating split key.
+ *
+ * Otherwise, return false.
+ */
+static bool
+bpt_merged_and_rebalanced_nodes(bpt_tree *bpt, bpt_node *curr,
+				void *removed_key, void **record){
+
+    if (HAVE_SAME_PARENT(curr, curr->prev)){
+	/*
+	 * Note that after the merge with the left node,
+	 * the current (right) node will be free-ed. Then,
+	 * refer to any attributes of 'curr' won't be
+	 * allowed after the bpt_merge_nodes(). Save
+	 * the parameter necessary for any subsequent
+	 * processing in advance.
+	 */
+	void *deleted_key;
+	bpt_node *prev = curr->prev;
+
+	printf("debug : bpt_merge_nodes() with left node\n");
+
+	/* The current node gets merged with the previous one */
+	deleted_key = bpt_merge_nodes(curr, false);
+	printf("debug : this merge decrements the number of parent's keys to '%d'\n",
+	       KEY_LEN(prev->parent));
+
+	/*
+	 * Incorporate the split key from parent to the current node,
+	 * if this is an internal node.
+	 */
+	if (prev->is_leaf == false){
+	    ll_asc_insert(prev->keys, deleted_key);
+	    printf("debug : incorporate the split key = %lu from parent to child\n",
+		   (uintptr_t) deleted_key);
+	}
+
+	/* Verify the node property */
+	bpt_node_validity(prev);
+
+	/*
+	 * Go up by using the saved reference of previous sibling.
+	 * Avoid the call of the bpt_delete_internal() that uses
+	 * current node below.
+	 */
+	if (prev->parent)
+	    bpt_delete_internal(bpt, prev->parent, removed_key, record);
+
+	return true;
+
+    }else if (HAVE_SAME_PARENT(curr, curr->next)){
+	/*
+	 * This path merges the current node with the next node.
+	 * Any left data in the next node will be moved to the current
+	 * node. Thus, after the bpt_merge_nodes(), attributes of the
+	 * current node are available.
+	 */
+	void *deleted_key;
+
+	printf("debug : bpt_merge_nodes() with right node\n");
+
+	deleted_key = bpt_merge_nodes(curr, true);
+	printf("debug : this merge decrements the number of parent's keys to '%d'\n",
+	       KEY_LEN(curr->parent));
+
+	/*
+	 * Incorporate the split key from parent to the current node,
+	 * if this is an internal node.
+	 */
+	if (curr->is_leaf == false){
+	    ll_asc_insert(curr->keys, deleted_key);
+	    printf("debug : incorporate the split key = %lu from parent to child\n",
+		   (uintptr_t) deleted_key);
+	}
+
+	/* Verify the node property */
+	bpt_node_validity(curr);
+
+	/* Go up */
+	if (curr->parent)
+	    bpt_delete_internal(bpt, curr->parent, removed_key, record);
+
+	return true;
+    }
+
+    return false;
+}
+
+/*
  * The main internal processing of B+ tree deletion.
  */
 static void
@@ -1294,85 +1383,21 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	    return;
 	}
 
-	/* Merge nodes if possible */
 	printf("debug : borrowing a key didn't happen\n");
 
-	if (HAVE_SAME_PARENT(curr, curr->prev)){
-	    /*
-	     * Note that after the merge with the left node,
-	     * the current (right) node will be free-ed. Then,
-	     * refer to any attributes of 'curr' won't be
-	     * allowed after the bpt_merge_nodes(). Save
-	     * the parameter necessary for any subsequent
-	     * processing in advance.
-	     */
-	    void *deleted_key;
-	    bpt_node *prev = curr->prev;
-
-	    printf("debug : bpt_merge_nodes() with left node\n");
-
-	    /* The current node gets merged with the previous one */
-	    deleted_key = bpt_merge_nodes(curr, false);
-	    printf("debug : this merge decrements the number of parent's keys to '%d'\n",
-		   KEY_LEN(prev->parent));
-
-	    /*
-	     * Incorporate the split key from parent to the current node,
-	     * if this is an internal node.
-	     */
-	    if (prev->is_leaf == false){
-		ll_asc_insert(prev->keys, deleted_key);
-		printf("debug : incorporate the split key = %lu from parent to child\n",
-		       (uintptr_t) deleted_key);
-	    }
-
-	    /* Verify the node property */
-	    bpt_node_validity(prev);
-
-	    /*
-	     * Go up by using the saved reference of previous sibling.
-	     * Avoid the call of the bpt_delete_internal() that uses
-	     * current node below.
-	     */
-	    if (prev->parent)
-		bpt_delete_internal(bpt, prev->parent, removed_key, record);
-
+	/*
+	 * Merge nodes if possible.
+	 *
+	 * After the bpt_merged_and_rebalanced_nodes(), the
+	 * whole steps to keep the B+ Tree property are done.
+	 *
+	 * Return and close this deletion process.
+	 */
+	if (bpt_merged_and_rebalanced_nodes(bpt, curr,
+					    removed_key, record))
 	    return;
 
-	}else if (HAVE_SAME_PARENT(curr, curr->next)){
-	    /*
-	     * This path merges the current node with the next node.
-	     * Any left data in the next node will be moved to the current
-	     * node. Thus, after the bpt_merge_nodes(), attributes of the
-	     * current node are available.
-	     */
-	    void *deleted_key;
-
-	    printf("debug : bpt_merge_nodes() with right node\n");
-
-	    deleted_key = bpt_merge_nodes(curr, true);
-	    printf("debug : this merge decrements the number of parent's keys to '%d'\n",
-		   KEY_LEN(curr->parent));
-
-	    /*
-	     * Incorporate the split key from parent to the current node,
-	     * if this is an internal node.
-	     */
-	    if (curr->is_leaf == false){
-		ll_asc_insert(curr->keys, deleted_key);
-		printf("debug : incorporate the split key = %lu from parent to child\n",
-		       (uintptr_t) deleted_key);
-	    }
-
-	    /* Verify the node property */
-	    bpt_node_validity(curr);
-	}else{
-	    printf("debug : merging nodes didn't happen either\n");
-	}
-
-	/* Continue to update the indexes. Go up by recursive call */
-	if (!curr->is_root)
-	    bpt_delete_internal(bpt, curr->parent, removed_key, record);
+	printf("debug : merging nodes didn't happen either\n");
     }
 }
 
