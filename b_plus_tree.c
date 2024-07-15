@@ -1282,38 +1282,14 @@ bpt_merged_and_rebalanced_nodes(bpt_tree *bpt, bpt_node *curr,
 }
 
 /*
- * The main internal processing of B+ tree deletion.
+ * Remove the key (or index) from the current node.
+ *
+ * If the key is one of the indexes, then replace it with the minimum key
+ * that could be fetched from the key's right child.
  */
 static void
-bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
-		    void **record){
-    assert(bpt != NULL);
-    assert(curr != NULL);
-    assert(removed_key != NULL);
-
-    printf("debug : bpt_delete_internal() for %p\n"
-           "debug : current node = %s and %s, the number of keys = %d, the number of children = %d\n",
-	   curr,
-	   curr->is_root ? "root" : "non-root",
-	   curr->is_leaf ? "leaf" : "non-leaf",
-	   KEY_LEN(curr), CHILDREN_LEN(curr));
-
-    /*
-     * If the root promotion happens, then we have reached
-     * to the top of the tree and done with all the necessary
-     * steps to keep the B+ tree properties.
-     *
-     * Return and close this key deletion process.
-     */
-    if (bpt_root_promoted(bpt, curr))
-	return;
-
-    /*
-     * --------------------------------------
-     * The main part of deletion process
-     * --------------------------------------
-     */
-
+bpt_remove_key_from_node(bpt_tree *bpt, bpt_node *curr, void *removed_key,
+			 void **record){
     if (curr->is_leaf){
 	/*
 	 * The call of bpt_search() before the first call of
@@ -1359,12 +1335,47 @@ bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
 	    bpt_node_validity(curr);
 	}
     }
+}
+
+/*
+ * The main internal processing of B+ tree deletion.
+ */
+static void
+bpt_delete_internal(bpt_tree *bpt, bpt_node *curr, void *removed_key,
+		    void **record){
+    assert(bpt != NULL);
+    assert(curr != NULL);
+    assert(removed_key != NULL);
+
+    printf("debug : bpt_delete_internal() for %p\n"
+           "debug : current node = %s and %s, the number of keys = %d, the number of children = %d\n",
+	   curr,
+	   curr->is_root ? "root" : "non-root",
+	   curr->is_leaf ? "leaf" : "non-leaf",
+	   KEY_LEN(curr), CHILDREN_LEN(curr));
 
     /*
-     * We are done with key deletion of this node. Execute the following codes
-     * and keep the b+ tree property.
+     * If the root promotion happens, then we have reached
+     * to the top of the tree and done with all the necessary
+     * steps to keep the B+ tree properties.
+     *
+     * Return and close this key deletion process.
+     */
+    if (bpt_root_promoted(bpt, curr))
+	return;
+
+    /*
+     * --------------------------------------
+     * The main part of deletion process
+     * --------------------------------------
+     */
+    bpt_remove_key_from_node(bpt, curr, removed_key, record);
+
+    /*
+     * Execute the following codes and keep the b+ tree property.
      */
     if (KEY_LEN(curr) >= GET_MIN_KEY_NUM(bpt->max_keys)){
+
 	/* The current node has sufficient keys. Go up if possible */
 	if (!curr->is_root)
 	    bpt_delete_internal(bpt, curr->parent, removed_key, record);
