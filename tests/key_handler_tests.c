@@ -71,21 +71,6 @@ test_string_handler(){
 }
 
 static void
-test_basic_key_handlers(void){
-    printf("> Test integer handler\n");
-    test_int_handler();
-
-    printf("> Test double handler\n");
-    test_double_handler();
-
-    printf("> Test bool handler\n");
-    test_bool_handler();
-
-    printf("> Test string handler\n");
-    test_string_handler();
-}
-
-static void
 test_combinatition_keys_handlers(){
     composite_key_store *cks;
     double dwrite = -15.0, dread = 0.0;
@@ -123,6 +108,27 @@ test_combinatition_keys_handlers(){
     free(cks);
 }
 
+static void
+test_basic_key_handlers(void){
+    printf("> Test integer handler\n");
+    test_int_handler();
+
+    printf("> Test double handler\n");
+    test_double_handler();
+
+    printf("> Test bool handler\n");
+    test_bool_handler();
+
+    printf("> Test string handler\n");
+    test_string_handler();
+}
+
+static void
+test_advanced_key_handlers(void){
+    printf("> Test keys combination\n");
+    test_combinatition_keys_handlers();
+}
+
 int
 main(int argc, char **argv){
 
@@ -132,7 +138,7 @@ main(int argc, char **argv){
 
     printf("> Perform combination tests of more than two types\n");
 
-    test_combinatition_keys_handlers();
+    test_advanced_key_handlers();
 
     return 0;
 }
