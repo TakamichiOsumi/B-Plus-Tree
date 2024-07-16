@@ -20,9 +20,9 @@ typedef enum key_type {
  *
  * String type is calculated by user input.
  */
-#define INT_SIZE (sizeof(BPT_INT))
-#define DOUBLE_SIZE (sizeof(BPT_DOUBLE))
-#define BOOLEAN_SIZE (sizeof(BPT_BOOLEAN))
+#define INT_SIZE (sizeof(int))
+#define DOUBLE_SIZE (sizeof(double))
+#define BOOLEAN_SIZE (sizeof(bool))
 
 /*
  * Define one key for each key type.
@@ -39,7 +39,12 @@ typedef struct bpt_key {
      */
     uint16_t key_size;
 
-    void *(*key_handler)(void *);
+    /*
+     * Type specific callbacks to read and write data.
+     */
+    void *(*key_writer)(void *, void *);
+
+    void *(*key_reader)(void *, void *);
 
 } bpt_key;
 
@@ -53,12 +58,12 @@ typedef struct composite_key_store {
     /*
      * Length of one sequence of unique key
      */
-    int full_key_size;
+    uintptr_t full_key_size;
 
     /*
-     * Lists of 'bpt_key'
+     * Array of 'bpt_key *'
      */
-    linked_list *key_attributes;
+    bpt_key **keys_metadata;
 
 } composite_key_store;
 
@@ -73,5 +78,8 @@ void *bkh_bool_write(void *key_sequence, void *bool_ptr);
 void *bkh_bool_read(void *key_sequence, void *bool_ptr);
 void *bkh_str_write(void *key_sequence, void *str_ptr);
 void *bkh_str_read(void *key_sequence, void *str_ptr);
+
+bpt_key *bpt_create_key_metadata(key_type type, int str_size);
+void bpt_free_key_metadata(bpt_key *key_metadata);
 
 #endif
