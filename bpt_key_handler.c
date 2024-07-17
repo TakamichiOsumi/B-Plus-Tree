@@ -6,8 +6,6 @@
 #include "b_plus_tree.h"
 #include "bpt_key_handler.h"
 
-#include "Linked-List/linked_list.h"
-
 void *
 bkh_malloc(size_t size){
     void *p;
@@ -122,8 +120,6 @@ bkh_str_write(void *key_sequence, void *str_ptr){
 	s++;
     }
     *cp = '\0';
-
-    /* printf("The written data : '%s'\n", (char *) key_sequence); */
 
     key_sequence += (str_len + 1);
 

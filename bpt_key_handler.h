@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#include "Linked-List/linked_list.h"
-
 /*
  * Define all key types to support.
  */
@@ -33,11 +31,9 @@ typedef struct bpt_key {
     key_type type;
 
     /*
-     * Usually fixed size.
-     *
-     * But, length is variable when the type is STRING.
+     * Fixed size except for STRING type.
      */
-    uint16_t key_size;
+    uintptr_t key_size;
 
     /*
      * Type specific callbacks to read and write data.

@@ -70,6 +70,9 @@ test_string_handler(){
     assert(strcmp(src, dest) == 0);
 }
 
+/*
+ * Test handlers for 'double' and 'int'.
+ */
 static void
 test_combinatition_keys_handlers(){
     composite_key_store *cks;
@@ -108,6 +111,60 @@ test_combinatition_keys_handlers(){
     free(cks);
 }
 
+/*
+ * Test handlers for 'string', 'bool' and 'int'.
+ *
+ * Suppose that the maximum size of the string is 20.
+ */
+static void
+test_combinatition_keys_handlers_v2(){
+    composite_key_store *cks;
+    char *swrite = "Hello World", *sread;
+    bool bwrite = true, bread = false;
+    int iwrite = -100, iread = 0;
+    void *buf;
+
+    cks = malloc(sizeof(composite_key_store));
+    cks->keys_metadata = (bpt_key **) malloc(sizeof(bpt_key *) * 3);
+
+    cks->full_key_size = 20 + BOOLEAN_SIZE + INT_SIZE;
+    cks->keys_metadata[0] = bpt_create_key_metadata(BPT_STRING, 20);
+    cks->keys_metadata[1] = bpt_create_key_metadata(BPT_BOOLEAN, 0);
+    cks->keys_metadata[2] = bpt_create_key_metadata(BPT_INT, 0);
+
+    buf = malloc(cks->full_key_size);
+    memset(buf, '\0', cks->full_key_size);
+
+    /* Write */
+    buf = cks->keys_metadata[0]->key_writer(buf, (void *) swrite);
+    /* Skip the left unused space for string variable */
+    buf = buf + (cks->keys_metadata[0]->key_size - (strlen(swrite) + 1));
+    buf = cks->keys_metadata[1]->key_writer(buf, (void *) &bwrite);
+    buf = cks->keys_metadata[2]->key_writer(buf, (void *) &iwrite);
+
+    /* Make the buffer point to the original position */
+    buf -= cks->full_key_size;
+
+    /* Read */
+    sread = malloc(sizeof(char) * cks->keys_metadata[0]->key_size);
+    buf = cks->keys_metadata[0]->key_reader(buf, (void *) sread);
+    /* Skip the left unused space for string variable */
+    buf = buf + (cks->keys_metadata[0]->key_size - (strlen(sread) + 1));
+    buf = cks->keys_metadata[1]->key_reader(buf, (void *) &bread);
+    buf = cks->keys_metadata[2]->key_reader(buf, (void *) &iread);
+
+    assert(strncmp(swrite, sread, strlen(swrite)) == 0);
+    assert(bwrite == bread);
+    assert(iwrite == iread);
+
+    /* Clean up */
+    buf -= cks->full_key_size;
+    free(buf);
+
+    free(cks->keys_metadata);
+    free(cks);
+}
+
 static void
 test_basic_key_handlers(void){
     printf("> Test integer handler\n");
@@ -125,8 +182,11 @@ test_basic_key_handlers(void){
 
 static void
 test_advanced_key_handlers(void){
-    printf("> Test keys combination\n");
+    printf("> Test keys combination (double & integer)\n");
     test_combinatition_keys_handlers();
+
+    printf("> Test keys combination (string & bool & integer)\n");
+    test_combinatition_keys_handlers_v2();
 }
 
 int
