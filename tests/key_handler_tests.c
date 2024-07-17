@@ -71,7 +71,8 @@ test_string_handler(){
 }
 
 /*
- * Test handlers for 'double' and 'int'.
+ * Test handlers for 'double' and 'int' by creating a single
+ * key sequence that consists of those two types.
  */
 static void
 test_combinatition_keys_handlers(){
@@ -88,6 +89,7 @@ test_combinatition_keys_handlers(){
     cks->keys_metadata[1] = bpt_create_key_metadata(BPT_INT, 0);
 
     buf = malloc(cks->full_key_size);
+    memset(buf, '\0', cks->full_key_size);
 
     /* Write */
     buf = cks->keys_metadata[0]->key_writer(buf, (void *) &dwrite);
@@ -103,7 +105,10 @@ test_combinatition_keys_handlers(){
     assert(dread == dwrite);
     assert(iread == iwrite);
 
-    /* Clean up */
+    /*
+     * Clean up. Never forget to rewind the pointer to the
+     * original buffer position. Otherwise, free() fails.
+     */
     buf -= cks->full_key_size;
     free(buf);
 
@@ -112,7 +117,8 @@ test_combinatition_keys_handlers(){
 }
 
 /*
- * Test handlers for 'string', 'bool' and 'int'.
+ * Test handlers for 'string', 'bool' and 'int' by creating a single
+ * key sequence that consists of those three types.
  *
  * Suppose that the maximum size of the string is 20.
  */

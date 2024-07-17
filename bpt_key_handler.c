@@ -25,7 +25,7 @@ bkh_free(void *p){
 }
 
 /*
- * Write an integer value from 'int_ptr' to 'key_sequence'
+ * Write an integer value from 'int_ptr' to 'key_sequence'.
  */
 void *
 bkh_int_write(void *key_sequence, void *int_ptr){
@@ -38,7 +38,7 @@ bkh_int_write(void *key_sequence, void *int_ptr){
 }
 
 /*
- * Read an integer value from 'key_sequence' to 'int_ptr'
+ * Read an integer value from 'key_sequence' to 'int_ptr'.
  */
 void *
 bkh_int_read(void *key_sequence, void *int_ptr){
@@ -51,7 +51,7 @@ bkh_int_read(void *key_sequence, void *int_ptr){
 }
 
 /*
- * Write a double value from 'double_ptr' to 'key_sequence'
+ * Write a double value from 'double_ptr' to 'key_sequence'.
  */
 void *
 bkh_double_write(void *key_sequence, void *double_ptr){
@@ -64,7 +64,7 @@ bkh_double_write(void *key_sequence, void *double_ptr){
 }
 
 /*
- * Read a double value from 'key_sequence' to 'double_ptr'
+ * Read a double value from 'key_sequence' to 'double_ptr'.
  */
 void *
 bkh_double_read(void *key_sequence, void *double_ptr){
@@ -77,7 +77,7 @@ bkh_double_read(void *key_sequence, void *double_ptr){
 }
 
 /*
- * Write a bool value from 'bool_ptr' to 'key_sequence'
+ * Write a bool value from 'bool_ptr' to 'key_sequence'.
  */
 void *
 bkh_bool_write(void *key_sequence, void *bool_ptr){
@@ -90,7 +90,7 @@ bkh_bool_write(void *key_sequence, void *bool_ptr){
 }
 
 /*
- * Read a bool value from 'key_sequence' from 'bool_ptr'
+ * Read a bool value from 'key_sequence' from 'bool_ptr'.
  */
 void *
 bkh_bool_read(void *key_sequence, void *bool_ptr){
@@ -154,7 +154,7 @@ bkh_str_read(void *key_sequence, void *str_ptr){
  * Return dynamically allocated bpt_key * data for 'type'.
  *
  * The 'str_size' is valid only for BPT_STRING. It's ignored
- * in other types.
+ * in other type cases.
  */
 bpt_key *
 bpt_create_key_metadata(key_type type, int str_size){
